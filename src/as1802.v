@@ -1,6 +1,6 @@
 `default_nettype none
 
-module as1802(
+module tt_um_as1802(
   input [7:0] ui_in,
   output [7:0] uo_out,
   input [7:0] uio_in,

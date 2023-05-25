@@ -46,7 +46,7 @@ module tb (
 	assign IO3 = QSPI_OEB[3] ? 1'bz : QSPI_DO[3];
 	
 	// instantiate the DUT
-	as1802 as1802(
+	tt_um_as1802 as1802(
 		`ifdef GL_TEST
 			.vccd1( 1'b1),
 			.vssd1( 1'b0),
