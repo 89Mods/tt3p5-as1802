@@ -61,9 +61,7 @@ module tb (
 		.uio_oe(uio_oe)
 		);
 		
-	W25Q128JVxIM #(
-		.FILENAME("testpgm.hex")
-	) W25Q128JVxIM (
+	W25Q128JVxIM W25Q128JVxIM(
 		.CSn(CS_ROM),
 		.CLK(SCLK),
 		.DIO(IO0),
