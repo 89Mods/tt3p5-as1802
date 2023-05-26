@@ -1,8 +1,0 @@
-	org 0
-	NOP
-START:
-	SEQ
-	NOP
-	NOP
-	REQ
-	LBR START

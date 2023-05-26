@@ -8,7 +8,8 @@ async def test_cpu(dut):
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
 
-    dut.intr.value = 0;
+    dut.uart_rx.value = 1
+    dut.intr.value = 0
     dut._log.info("reset")
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 10)

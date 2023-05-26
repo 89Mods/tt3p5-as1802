@@ -39,7 +39,7 @@ parameter JEDEC_ID_LO = 8'h18;
 parameter UNIQUE_ID = 64'h0102030405060708;
 parameter ADDRESS_MASK = (NUM_PAGES * PAGESIZE) - 1;		// Note that NUM_PAGES must be a power of 2 for this simulation to work properly.
 
-`define MEM_FILENAME "testpgm.hex"		                      // Memory contents file(s)
+`define MEM_FILENAME "asm/testpgm.txt"		                      // Memory contents file(s)
 `define SECSI_FILENAME "spiflash/secsi.hex"
 `define SFDP_FILENAME "spiflash/sfdp.hex"
 `define SREG_FILENAME "spiflash/sreg.hex"
@@ -403,7 +403,7 @@ begin :read_opcode
 	if(cmd_byte != `CMD_CHIP_RESET)
 	   flag_enable_reset = 0;   		// Ensure that ENABLE_RESET immediately precedes CHIP_RESET
 
-	$display("\nCommand = %h", cmd_byte);
+	//$display("\nCommand = %h", cmd_byte);
 
 	case (cmd_byte)				// Now dispatch the correct function
 	    

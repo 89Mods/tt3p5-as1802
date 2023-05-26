@@ -1,8 +1,0 @@
-          0 :                    	org 0
-          0 : C4                 	NOP
-          1 :                    START:
-          1 : 7B                 	SEQ
-          2 : C4                 	NOP
-          3 : C4                 	NOP
-          4 : 7A                 	REQ
-          5 : C0 00 01           	LBR START

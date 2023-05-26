@@ -133,7 +133,8 @@ jobs:
       with:
           python-override: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-    - run: | 
+    - run: |
+        pip3 install intelhex
         yosys --version
         iverilog -V
         cocotb-config --libpython
@@ -142,11 +143,12 @@ jobs:
     - name: test
       run: |
         pwd
-        rm runs/wokwi/results/final/verilog/gl/*.nl.v 
+        rm runs/wokwi/results/final/verilog/gl/*.nl.v
         cp runs/wokwi/results/final/verilog/gl/*.v src/gate_level_netlist.v
         cd src
         make clean
-        GATES=yes make
+        make tasm
+        GATES=yes make sim
         # make will return success even if the test fails, so check for failure in the results.xml
         ! grep failure results.xml
 

@@ -9,7 +9,7 @@ TOPLEVEL_LANG ?= verilog
 ifneq ($(GATES),yes)
 
 # this is the only part you should need to modify:
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/as1802.v $(PWD)/spiflash/W25Q128JVxIM.v
+VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/as1802.v $(PWD)/uart.v $(PWD)/spiflash/W25Q128JVxIM.v
 
 else
 
@@ -34,4 +34,10 @@ TOPLEVEL = tb
 MODULE = test
 
 # include cocotb's make rules to take care of the simulator setup
-include $(shell cocotb-config --makefiles)/Makefile.sim
+include $(shell cocotb-config --makefiles)/simulators/Makefile.icarus
+
+tasm:
+	cd asm && ./asm -C CDP1802 -l testpgm.lst -o testpgm.hex testpgm.asm
+	cd asm && python3 ToVerilogAsm.py
+
+.PHONY: clean tasm sim

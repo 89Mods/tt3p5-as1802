@@ -12,10 +12,12 @@ module tb (
 	input clk,
 	input rst_n,
 	input intr,
+	input uart_rx,
 	
 	input [3:0] EF,
 	
-	output Q
+	output Q,
+	output uart_tx
 );
 
 	// this part dumps the trace to a vcd file that can be viewed with GTKWave
@@ -45,6 +47,8 @@ module tb (
 	assign IO2 = QSPI_OEB[2] ? 1'bz : QSPI_DO[2];
 	assign IO3 = QSPI_OEB[3] ? 1'bz : QSPI_DO[3];
 	
+	assign uart_tx = uo_out[4];
+	
 	// instantiate the DUT
 	tt_um_as1802 as1802(
 		`ifdef GL_TEST
@@ -54,7 +58,7 @@ module tb (
 		.ena  (1'b1),
 		.clk (clk),
 		.rst_n(rst_n),
-		.ui_in({3'b000, intr, EF}),
+		.ui_in({2'b00, uart_rx, intr, EF}),
 		.uo_out(uo_out),
 		.uio_in({4'b0000, IO3, IO2, IO1, IO0}),
 		.uio_out(uio_out),

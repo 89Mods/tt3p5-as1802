@@ -126,8 +126,19 @@ wire [15:0] SP = regs[X];
 wire flag_init_done = startup_cycle == 0;
 `endif
 
+//UART REGS
+reg [15:0] uart_div;
+reg uart_start;
+wire [7:0] uart_rec_byte;
+wire uart_busy;
+wire uart_has_byte;
+reg uart_clear_status;
+//
+
 always @(posedge clk) begin
 	EF_l <= ~ui_in[3:0];
+	uart_start <= 0;
+	uart_clear_status <= 0;
 	if(!rst_n) begin
 		regs[0] <= 0;
 		X <= 0;
@@ -257,15 +268,38 @@ always @(posedge clk) begin
 			case(mem_cycle)
 				1: begin
 					if(addr_buff[15] == 0) begin //ROM location
-						last_addr <= addr_buff;
-						if(last_addr + 1 == addr_buff) begin
-							mem_cycle <= 27;
+						if(mem_write) begin
+							mem_cycle <= 0;
 						end else begin
-							CS_ROM <= 1;
-							SCLK <= 0;
+							last_addr <= addr_buff;
+							if(last_addr + 1 == addr_buff) begin
+								mem_cycle <= 27;
+							end else begin
+								CS_ROM <= 1;
+								SCLK <= 0;
+							end
 						end
 					end else if(addr_buff[15:4] == 12'hFFF) begin //IO location
-						
+						if(mem_write) begin
+							case(addr_buff[3:0])
+								0: uart_div[7:0] <= B;
+								1: uart_div[15:8] <= B;
+								2: uart_start <= 1;
+							endcase
+							mem_cycle <= 0;
+						end else begin
+							case(addr_buff[3:0])
+								0: data_in <= uart_div[7:0];
+								1: data_in <= uart_div[15:8];
+								2: begin
+									data_in <= uart_rec_byte;
+									uart_clear_status <= 1;
+								end
+								3: data_in <= {6'b0, uart_has_byte, uart_busy};
+								default: data_in <= 0;
+							endcase
+							mem_cycle <= 30;
+						end
 					end else begin //RAM location
 						
 					end
@@ -654,5 +688,19 @@ always @(posedge clk) begin
 		end
 	end
 end
+
+uart uart(
+	.divisor(uart_div),
+	.din(B),
+	.dout(uart_rec_byte),
+	.TX(uo_out[4]),
+	.RX(ui_in[5]),
+	.start(uart_start),
+	.busy(uart_busy),
+	.has_byte(uart_has_byte),
+	.clr_hb(uart_clear_status),
+	.clk(clk),
+	.rst(~rst_n)
+);
 
 endmodule

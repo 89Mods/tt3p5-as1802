@@ -1,0 +1,38 @@
+          0 : =0                 R0 equ 0
+          0 : =1                 R1 equ 1
+          0 : =2                 R2 equ 2
+          0 : =3                 R3 equ 3
+          0 : =4                 R4 equ 4
+          0 : =5                 R5 equ 5
+          0 : =6                 R6 equ 6
+          0 : =7                 R7 equ 7
+          0 : =8                 R8 equ 8
+          0 : =9                 R9 equ 9
+          0 : =A                 R10 equ 10
+          0 : =B                 R11 equ 11
+          0 : =C                 R12 equ 12
+          0 : =D                 R13 equ 13
+          0 : =E                 R14 equ 14
+          0 : =F                 R15 equ 15
+          0 :                    	
+          0 :                    	org 0
+          0 : C4                 	NOP
+          1 : F8 FF              	LDI 0xFF
+          3 : B9                 	PHI R9
+          4 : F8 F1              	LDI 0b11110001
+          6 : A9                 	PLO R9
+          7 : E9                 	SEX R9
+          8 : F8 00              	LDI 0
+          A : 73                 	STXD
+          B : F8 08              	LDI 8
+          D : 59                 	STR R9
+          E : F8 97              	LDI 0x97
+         10 : 19                 	INC R9
+         11 : 19                 	INC R9
+         12 : 73                 	STXD
+         13 :                    START:
+         13 : 7B                 	SEQ
+         14 : C4                 	NOP
+         15 : C4                 	NOP
+         16 : 7A                 	REQ
+         17 : C0 00 13           	LBR START
