@@ -26,7 +26,7 @@
           A : 73                 	STXD
           B : F8 08              	LDI 8
           D : 59                 	STR R9
-          E : F8 97              	LDI 0x97
+          E : F8 57              	LDI 0x57
          10 : 19                 	INC R9
          11 : 19                 	INC R9
          12 : 73                 	STXD

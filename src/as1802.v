@@ -1,6 +1,6 @@
 `default_nettype none
 
-module tt_um_as1802(
+module tt_um_as1802 #(parameter DFFRAM_SIZE = 128)(
   input [7:0] ui_in,
   output [7:0] uo_out,
   input [7:0] uio_in,
@@ -133,6 +133,10 @@ wire [7:0] uart_rec_byte;
 wire uart_busy;
 wire uart_has_byte;
 reg uart_clear_status;
+//
+
+//RAM
+reg [7:0] DFFRAM [DFFRAM_SIZE-1:0];
 //
 
 always @(posedge clk) begin
@@ -300,8 +304,14 @@ always @(posedge clk) begin
 							endcase
 							mem_cycle <= 30;
 						end
-					end else begin //RAM location
-						
+					end else if(addr_buff[14:0] < DFFRAM_SIZE) begin
+						if(mem_write) begin
+							DFFRAM[addr_buff[14:0]] <= B;
+							mem_cycle <= 0;
+						end else begin
+							data_in <= DFFRAM[addr_buff[14:0]];
+							mem_cycle <= 30;
+						end
 					end
 				end
 				2: begin
