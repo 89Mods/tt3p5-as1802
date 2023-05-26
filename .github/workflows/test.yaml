@@ -27,6 +27,7 @@ jobs:
       run: |
         cd src
         chmod +x asm/asm
+        cat asm/testpgm.asm
         make clean
         make tasm
         make sim
