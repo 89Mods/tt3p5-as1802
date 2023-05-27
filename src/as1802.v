@@ -38,13 +38,23 @@ wire intr = ui_in[4];
 
 reg CS_ROM;
 assign uo_out[1] = CS_ROM;
-reg SCLK;
-assign uo_out[2] = SCLK;
-reg [3:0] QSPI_DO;
-reg [3:0] QSPI_OEB;
-assign uio_out[3:0] = QSPI_DO;
-assign uio_oe[3:0] = QSPI_OEB;
-wire [3:0] QSPI_DAT = uio_in[3:0];
+reg SCLK_ROM;
+assign uo_out[2] = SCLK_ROM;
+reg [3:0] ROM_DO;
+reg [3:0] ROM_OEB;
+assign uio_out[3:0] = ROM_DO;
+assign uio_oe[3:0] = ROM_OEB;
+wire [3:0] ROM_DAT = uio_in[3:0];
+
+reg CS_RAM;
+assign uo_out[5] = CS_RAM;
+reg SCLK_RAM;
+assign uo_out[6] = SCLK_RAM;
+reg [3:0] RAM_DO;
+reg [3:0] RAM_OEB;
+assign uio_out[7:4] = RAM_DO;
+assign uio_oe[7:4] = RAM_OEB;
+wire [3:0] RAM_DAT = uio_in[7:4];
 
 reg [7:0] data_in;
 reg [15:0] last_addr;
@@ -157,9 +167,13 @@ always @(posedge clk) begin
 		D <= 0;
 		T <= 0;
 		CS_ROM <= 1;
-		SCLK <= 0;
-		QSPI_OEB <= 4'b1111;
-		QSPI_DO <= 0;
+		SCLK_ROM <= 0;
+		SCLK_RAM <= 0;
+		RAM_DO <= 0;
+		RAM_OEB <= 4'b1111;
+		CS_RAM <= 1;
+		ROM_OEB <= 4'b1111;
+		ROM_DO <= 0;
 		last_addr <= 8'hFF;
 		instr_cycle <= 0;
 		startup_cycle <= 1;
@@ -170,12 +184,12 @@ always @(posedge clk) begin
 		if(spi_cycle != 0) begin
 			spi_cycle <= spi_cycle == 17 ? 0 : spi_cycle + 1;
 			if(spi_cycle[0]) begin
-				SCLK <= 0;
-				QSPI_OEB[0] <= spi_cycle == 17;
-				QSPI_DO[0] <= spi_dat_out[7];
+				SCLK_ROM <= 0;
+				ROM_OEB[0] <= spi_cycle == 17;
+				ROM_DO[0] <= spi_dat_out[7];
 				spi_dat_out <= {spi_dat_out[6:0], 1'b0};
 			end else begin
-				SCLK <= 1;
+				SCLK_ROM <= 1;
 			end
 		end else if(startup_cycle != 0) begin
 			startup_cycle <= startup_cycle + 1;
@@ -184,20 +198,34 @@ always @(posedge clk) begin
 					CS_ROM <= 0;
 					spi_dat_out <= 8'hFF;
 					spi_cycle <= 1;
-					QSPI_OEB[3:2] = 2'b00;
-					QSPI_DO[3:2] = 2'b11;
+					ROM_OEB[3:2] <= 2'b00;
+					ROM_DO[3:2] <= 2'b11;
+					RAM_OEB <= 4'b0000;
+					SCLK_RAM <= 0;
+					RAM_DO <= 4'hF;
+					CS_RAM <= 0;
 				end
-				2: CS_ROM <= 1;
+				2: begin
+					CS_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
 				3: begin
 					CS_ROM <= 0;
 					spi_dat_out <= 8'hAB;
 					spi_cycle <= 1;
+					SCLK_RAM <= 0;
+					RAM_DO <= 4'h5;
 				end
-				4: CS_ROM <= 1;
+				4: begin
+					CS_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
 				5: begin
 					CS_ROM <= 0;
 					spi_dat_out <= 8'h06;
 					spi_cycle <= 1;
+					SCLK_RAM <= 0;
+					CS_RAM <= 1;
 				end
 				6: CS_ROM <= 1;
 				7: begin
@@ -222,46 +250,100 @@ always @(posedge clk) begin
 					spi_cycle <= 1;
 				end
 				12: begin
-					QSPI_OEB <= 4'b0000;
-					QSPI_DO <= 0;
+					ROM_OEB <= 4'b0000;
+					ROM_DO <= 0;
+					CS_RAM <= 0;
+					RAM_OEB <= 4'b1110;
+					RAM_DO[0] <= 0;
 				end
-				13: SCLK <= 1;
-				14: SCLK <= 0;
-				15: SCLK <= 1;
-				16: SCLK <= 0;
-				17: SCLK <= 1;
-				18: SCLK <= 0;
-				19: SCLK <= 1;
-				20: SCLK <= 0;
-				21: SCLK <= 1;
-				22: SCLK <= 0;
-				23: SCLK <= 1;
+				13: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				14: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+				end
+				15: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				16: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					RAM_DO[0] <= 1;
+				end
+				17: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				18: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+				end
+				19: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				20: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					RAM_DO[0] <= 0;
+				end
+				21: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				22: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					RAM_DO[0] <= 1;
+				end
+				23: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
 				24: begin
-					QSPI_DO <= 4'b1010;
-					SCLK <= 0;
+					ROM_DO <= 4'b1010;
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					RAM_DO[0] <= 0;
 				end
-				25: SCLK <= 1;
+				25: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
 				26: begin
-					QSPI_DO <= 4'b0101;
-					SCLK <= 0;
+					ROM_DO <= 4'b0101;
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					RAM_DO[0] <= 1;
 				end
-				27: SCLK <= 1;
-				28: SCLK <= 0;
+				27: begin
+					SCLK_ROM <= 1;
+					SCLK_RAM <= 1;
+				end
+				28: begin
+					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+				end
 				29: begin
-					QSPI_OEB <= 4'b1111;
-					SCLK <= 1;
+					ROM_OEB <= 4'b1111;
+					SCLK_ROM <= 1;
+					CS_RAM <= 1;
+					RAM_OEB <= 4'b1111;
 				end
-				30: SCLK <= 0;
-				31: SCLK <= 1;
-				32: SCLK <= 0;
-				33: SCLK <= 1;
-				34: SCLK <= 0;
-				35: SCLK <= 1;
-				36: SCLK <= 0;
-				37: SCLK <= 1;
-				38: SCLK <= 0;
-				39: SCLK <= 1;
-				40: SCLK <= 0;
+				30: SCLK_ROM <= 0;
+				31: SCLK_ROM <= 1;
+				32: SCLK_ROM <= 0;
+				33: SCLK_ROM <= 1;
+				34: SCLK_ROM <= 0;
+				35: SCLK_ROM <= 1;
+				36: SCLK_ROM <= 0;
+				37: SCLK_ROM <= 1;
+				38: SCLK_ROM <= 0;
+				39: SCLK_ROM <= 1;
+				40: SCLK_ROM <= 0;
 				41: begin
 					startup_cycle <= 0;
 					CS_ROM <= 1;
@@ -280,7 +362,7 @@ always @(posedge clk) begin
 								mem_cycle <= 27;
 							end else begin
 								CS_ROM <= 1;
-								SCLK <= 0;
+								SCLK_ROM <= 0;
 							end
 						end
 					end else if(addr_buff[15:4] == 12'hFFF) begin //IO location
@@ -316,68 +398,68 @@ always @(posedge clk) begin
 				end
 				2: begin
 					CS_ROM <= 0;
-					QSPI_DO <= 4'b0000;
-					QSPI_OEB <= 4'b0000;
+					ROM_DO <= 4'b0000;
+					ROM_OEB <= 4'b0000;
 				end
-				3: SCLK <= 1;
-				4: SCLK <= 0;
-				5: SCLK <= 1;
+				3: SCLK_ROM <= 1;
+				4: SCLK_ROM <= 0;
+				5: SCLK_ROM <= 1;
 				6: begin
-					SCLK <= 0;
-					QSPI_DO <= addr_buff[15:12];
+					SCLK_ROM <= 0;
+					ROM_DO <= addr_buff[15:12];
 				end
-				7: SCLK <= 1;
+				7: SCLK_ROM <= 1;
 				8: begin
-					SCLK <= 0;
-					QSPI_DO <= addr_buff[11:8];
+					SCLK_ROM <= 0;
+					ROM_DO <= addr_buff[11:8];
 				end
-				9: SCLK <= 1;
+				9: SCLK_ROM <= 1;
 				10: begin
-					SCLK <= 0;
-					QSPI_DO <= addr_buff[7:4];
+					SCLK_ROM <= 0;
+					ROM_DO <= addr_buff[7:4];
 				end
-				11: SCLK <= 1;
+				11: SCLK_ROM <= 1;
 				12: begin
-					SCLK <= 0;
-					QSPI_DO <= addr_buff[3:0];
+					SCLK_ROM <= 0;
+					ROM_DO <= addr_buff[3:0];
 				end
-				13: SCLK <= 1;
+				13: SCLK_ROM <= 1;
 				14: begin
-					SCLK <= 0;
-					QSPI_DO <= 4'b1010;
+					SCLK_ROM <= 0;
+					ROM_DO <= 4'b1010;
 				end
-				15: SCLK <= 1;
+				15: SCLK_ROM <= 1;
 				16: begin
-					SCLK <= 0;
-					QSPI_DO <= 4'b0101;
+					SCLK_ROM <= 0;
+					ROM_DO <= 4'b0101;
 				end
-				17: SCLK <= 1;
+				17: SCLK_ROM <= 1;
 				18: begin
-					SCLK <= 0;
-					QSPI_OEB <= 4'b1111;
+					SCLK_ROM <= 0;
+					ROM_OEB <= 4'b1111;
 				end
-				19: SCLK <= 1;
-				20: SCLK <= 0;
-				21: SCLK <= 1;
-				22: SCLK <= 0;
-				23: SCLK <= 1;
-				24: SCLK <= 0;
-				25: SCLK <= 1;
-				26: SCLK <= 0;
+				19: SCLK_ROM <= 1;
+				20: SCLK_ROM <= 0;
+				21: SCLK_ROM <= 1;
+				22: SCLK_ROM <= 0;
+				23: SCLK_ROM <= 1;
+				24: SCLK_ROM <= 0;
+				25: SCLK_ROM <= 1;
+				26: SCLK_ROM <= 0;
 				
 				27: begin
-					SCLK <= 1;
-					data_in[7:4] = QSPI_DAT;
+					SCLK_ROM <= 1;
+					data_in[7:4] = ROM_DAT;
 				end
 				28: begin
-					SCLK <= 0;
+					SCLK_ROM <= 0;
 				end
 				29: begin
-					SCLK <= 1;
-					data_in[3:0] = QSPI_DAT;
+					SCLK_ROM <= 1;
+					data_in[3:0] = ROM_DAT;
 				end
 				30: begin
-					SCLK <= 0;
+					SCLK_ROM <= 0;
 					if(instr_cycle == 1) begin
 						S <= 2'b01;
 						instr_latch <= data_in;

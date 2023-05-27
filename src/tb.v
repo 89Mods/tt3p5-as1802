@@ -27,10 +27,14 @@ module tb (
 		#1;
 	end
 	
-	wire IO0;
-	wire IO1;
-	wire IO2;
-	wire IO3;
+	wire IO0_ROM;
+	wire IO1_ROM;
+	wire IO2_ROM;
+	wire IO3_ROM;
+	wire IO0_RAM;
+	wire IO1_RAM;
+	wire IO2_RAM;
+	wire IO3_RAM;
 
 	// wire up the inputs and outputs
 	wire [7:0] uo_out;
@@ -38,14 +42,23 @@ module tb (
 	wire [7:0] uio_oe;
 	assign Q = uo_out[0];
 	wire CS_ROM = uo_out[1];
-	wire SCLK = uo_out[2];
+	wire SCLK_ROM = uo_out[2];
+	wire CS_RAM = uo_out[5];
+	wire SCLK_RAM = uo_out[6];
 	
-	wire [3:0] QSPI_DO = uio_out[3:0];
-	wire [3:0] QSPI_OEB = uio_oe[3:0];
-	assign IO0 = QSPI_OEB[0] ? 1'bz : QSPI_DO[0];
-	assign IO1 = QSPI_OEB[1] ? 1'bz : QSPI_DO[1];
-	assign IO2 = QSPI_OEB[2] ? 1'bz : QSPI_DO[2];
-	assign IO3 = QSPI_OEB[3] ? 1'bz : QSPI_DO[3];
+	wire [3:0] ROM_DO = uio_out[3:0];
+	wire [3:0] ROM_OEB = uio_oe[3:0];
+	assign IO0_ROM = ROM_OEB[0] ? 1'bz : ROM_DO[0];
+	assign IO1_ROM = ROM_OEB[1] ? 1'bz : ROM_DO[1];
+	assign IO2_ROM = ROM_OEB[2] ? 1'bz : ROM_DO[2];
+	assign IO3_ROM = ROM_OEB[3] ? 1'bz : ROM_DO[3];
+	
+	wire [3:0] RAM_DO = uio_out[7:4];
+	wire [3:0] RAM_OEB = uio_oe[7:4];
+	assign IO0_RAM = RAM_OEB[0] ? 1'bz : RAM_DO[0];
+	assign IO1_RAM = RAM_OEB[1] ? 1'bz : RAM_DO[1];
+	assign IO2_RAM = RAM_OEB[2] ? 1'bz : RAM_DO[2];
+	assign IO3_RAM = RAM_OEB[3] ? 1'bz : RAM_DO[3];
 	
 	assign uart_tx = uo_out[4];
 	
@@ -60,18 +73,18 @@ module tb (
 		.rst_n(rst_n),
 		.ui_in({2'b00, uart_rx, intr, EF}),
 		.uo_out(uo_out),
-		.uio_in({4'b0000, IO3, IO2, IO1, IO0}),
+		.uio_in({IO3_RAM, IO2_RAM, IO1_RAM, IO0_RAM, IO3_ROM, IO2_ROM, IO1_ROM, IO0_ROM}),
 		.uio_out(uio_out),
 		.uio_oe(uio_oe)
 		);
 		
 	W25Q128JVxIM W25Q128JVxIM(
 		.CSn(CS_ROM),
-		.CLK(SCLK),
-		.DIO(IO0),
-		.DO(IO1),
-		.WPn(IO2),
-		.HOLDn(IO3)
+		.CLK(SCLK_ROM),
+		.DIO(IO0_ROM),
+		.DO(IO1_ROM),
+		.WPn(IO2_ROM),
+		.HOLDn(IO3_ROM)
 	);
 
 endmodule
