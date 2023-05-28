@@ -86,5 +86,14 @@ module tb (
 		.WPn(IO2_ROM),
 		.HOLDn(IO3_ROM)
 	);
+	
+	RAM RAM(
+		.CSn(CS_RAM),
+		.CLK(SCLK_RAM),
+		.IO0(IO0_RAM),
+		.IO1(IO1_RAM),
+		.IO2(IO2_RAM),
+		.IO3(IO3_RAM)
+	);
 
 endmodule

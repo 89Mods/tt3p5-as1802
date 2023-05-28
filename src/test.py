@@ -2,6 +2,41 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ClockCycles
 
+async def test_uart_rec(dut, value):
+    await FallingEdge(dut.uart_tx)
+    await ClockCycles(dut.clk, 2)
+    assert dut.uart_tx.value == 0
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == value & 1
+    value >>= 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == 1
+    await ClockCycles(dut.clk, 9)
+    assert dut.uart_tx.value == 1
+
 @cocotb.test()
 async def test_cpu(dut):
     dut._log.info("start")
@@ -16,32 +51,14 @@ async def test_cpu(dut):
     dut.rst_n.value = 1
     
     await ClockCycles(dut.clk, 25)
-    await FallingEdge(dut.uart_tx)
-    await ClockCycles(dut.clk, 2)
-    assert dut.uart_tx.value == 0
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 0
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 0
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 0
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
-    await ClockCycles(dut.clk, 9)
-    assert dut.uart_tx.value == 1
+    await test_uart_rec(dut, 0x57)
     
     for i in range(0, 16):
         await RisingEdge(dut.Q)
         await FallingEdge(dut.Q)
+
+    await test_uart_rec(dut, 0x16)
+    await test_uart_rec(dut, 0x34)
+    
+    await RisingEdge(dut.Q)
+    await ClockCycles(dut.clk, 32)

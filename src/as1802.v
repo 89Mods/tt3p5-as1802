@@ -64,7 +64,7 @@ reg lda;
 reg mem_write;
 reg [4:0] spi_cycle;
 reg [7:0] spi_dat_out;
-reg [4:0] mem_cycle;
+reg [7:0] mem_cycle;
 reg [5:0] startup_cycle;
 reg [3:0] instr_cycle;
 
@@ -147,6 +147,8 @@ reg uart_clear_status;
 
 //RAM
 reg [7:0] DFFRAM [DFFRAM_SIZE-1:0];
+reg [3:0] RAM_delay_cycs;
+reg [3:0] RAM_delay_counter;
 //
 
 always @(posedge clk) begin
@@ -166,6 +168,7 @@ always @(posedge clk) begin
 		DF <= 0;
 		D <= 0;
 		T <= 0;
+		RAM_delay_cycs <= 6;
 		CS_ROM <= 1;
 		SCLK_ROM <= 0;
 		SCLK_RAM <= 0;
@@ -371,6 +374,7 @@ always @(posedge clk) begin
 								0: uart_div[7:0] <= B;
 								1: uart_div[15:8] <= B;
 								2: uart_start <= 1;
+								3: RAM_delay_cycs <= B[3:0];
 							endcase
 							mem_cycle <= 0;
 						end else begin
@@ -386,7 +390,7 @@ always @(posedge clk) begin
 							endcase
 							mem_cycle <= 30;
 						end
-					end else if(addr_buff[14:0] < DFFRAM_SIZE) begin
+					end else if(addr_buff[14:0] < DFFRAM_SIZE) begin //Internal RAM
 						if(mem_write) begin
 							DFFRAM[addr_buff[14:0]] <= B;
 							mem_cycle <= 0;
@@ -394,6 +398,8 @@ always @(posedge clk) begin
 							data_in <= DFFRAM[addr_buff[14:0]];
 							mem_cycle <= 30;
 						end
+					end else begin //External RAM
+						mem_cycle <= 100;
 					end
 				end
 				2: begin
@@ -460,6 +466,8 @@ always @(posedge clk) begin
 				end
 				30: begin
 					SCLK_ROM <= 0;
+					SCLK_RAM <= 0;
+					CS_RAM <= 1;
 					if(instr_cycle == 1) begin
 						S <= 2'b01;
 						instr_latch <= data_in;
@@ -468,6 +476,94 @@ always @(posedge clk) begin
 					end else begin
 						B <= data_in;
 					end
+					mem_cycle <= 0;
+				end
+				
+				//External RAM access
+				100: begin
+					CS_RAM <= 1'b0;
+					RAM_OEB <= 4'b0000;
+					SCLK_RAM <= 0;
+				end
+				101: RAM_DO <= mem_write ? 4'h3 : 4'hE;
+				102: SCLK_RAM <= 1;
+				103: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= mem_write ? 4'h8 : 4'hB;
+				end
+				104: SCLK_RAM <= 1;
+				105: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= 0;
+				end
+				106: SCLK_RAM <= 1;
+				107: SCLK_RAM <= 0;
+				108: SCLK_RAM <= 1;
+				109: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= {1'b0, addr_buff[14:12]};
+				end
+				110: SCLK_RAM <= 1;
+				111: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= addr_buff[11:8];
+				end
+				112: SCLK_RAM <= 1;
+				113: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= addr_buff[7:4];
+				end
+				114: SCLK_RAM <= 1;
+				115: begin
+					SCLK_RAM <= 0;
+					RAM_DO <= addr_buff[3:0];
+				end
+				116: SCLK_RAM <= 1;
+				117: begin
+					SCLK_RAM <= 0;
+					if(mem_write) begin
+						mem_cycle <= 200;
+					end else begin
+						RAM_delay_counter <= RAM_delay_cycs;
+					end
+				end
+				118: begin
+					SCLK_RAM <= 1;
+					RAM_OEB <= 4'b1111;
+				end
+				119: begin
+					SCLK_RAM <= 0;
+					RAM_delay_counter <= RAM_delay_counter - 1;
+					if(RAM_delay_counter != 1) begin
+						mem_cycle <= 118;
+					end
+				end
+				120: begin
+					SCLK_RAM <= 1;
+					data_in[7:4] <= RAM_DAT;
+				end
+				121: SCLK_RAM <= 0;
+				122: begin
+					SCLK_RAM <= 1;
+					data_in[3:0] <= RAM_DAT;
+					mem_cycle <= 30;
+				end
+				
+				//External RAM write
+				200: begin
+					RAM_DO <= B[7:4];
+					SCLK_RAM <= 0;
+				end
+				201: SCLK_RAM <= 1;
+				202: begin
+					RAM_DO <= B[3:0];
+					SCLK_RAM <= 0;
+				end
+				203: SCLK_RAM <= 1;
+				204: begin
+					SCLK_RAM <= 0;
+					CS_RAM <= 1;
+					RAM_OEB <= 4'b1111;
 					mem_cycle <= 0;
 				end
 			endcase
