@@ -47,9 +47,9 @@ assign uio_oe[3:0] = ROM_OEB;
 wire [3:0] ROM_DAT = uio_in[3:0];
 
 reg CS_RAM;
-assign uo_out[5] = CS_RAM;
+assign uo_out[3] = CS_RAM;
 reg SCLK_RAM;
-assign uo_out[6] = SCLK_RAM;
+assign uo_out[4] = SCLK_RAM;
 reg [3:0] RAM_DO;
 reg [3:0] RAM_OEB;
 assign uio_out[7:4] = RAM_DO;
@@ -145,6 +145,13 @@ wire uart_has_byte;
 reg uart_clear_status;
 //
 
+//SPI REGS
+reg [7:0] spi_div;
+reg spi_start;
+wire [7:0] spi_rec_byte;
+wire spi_busy;
+//
+
 //RAM
 reg [7:0] DFFRAM [DFFRAM_SIZE-1:0];
 reg [3:0] RAM_delay_cycs;
@@ -154,6 +161,7 @@ reg [3:0] RAM_delay_counter;
 always @(posedge clk) begin
 	EF_l <= ~ui_in[3:0];
 	uart_start <= 0;
+	spi_start <= 0;
 	uart_clear_status <= 0;
 	if(!rst_n) begin
 		regs[0] <= 0;
@@ -375,6 +383,8 @@ always @(posedge clk) begin
 								1: uart_div[15:8] <= B;
 								2: uart_start <= 1;
 								3: RAM_delay_cycs <= B[3:0];
+								4: spi_div <= B;
+								5: spi_start <= 1;
 							endcase
 							mem_cycle <= 0;
 						end else begin
@@ -385,7 +395,8 @@ always @(posedge clk) begin
 									data_in <= uart_rec_byte;
 									uart_clear_status <= 1;
 								end
-								3: data_in <= {6'b0, uart_has_byte, uart_busy};
+								3: data_in <= {5'b0, spi_busy, uart_has_byte, uart_busy};
+								4: data_in <= spi_rec_byte;
 								default: data_in <= 0;
 							endcase
 							mem_cycle <= 30;
@@ -881,12 +892,25 @@ uart uart(
 	.divisor(uart_div),
 	.din(B),
 	.dout(uart_rec_byte),
-	.TX(uo_out[4]),
+	.TX(uo_out[5]),
 	.RX(ui_in[5]),
 	.start(uart_start),
 	.busy(uart_busy),
 	.has_byte(uart_has_byte),
 	.clr_hb(uart_clear_status),
+	.clk(clk),
+	.rst(~rst_n)
+);
+
+spi spi(
+	.divisor(spi_div),
+	.din(B),
+	.dout(spi_rec_byte),
+	.SCLK(uo_out[6]),
+	.DO(uo_out[7]),
+	.DI(ui_in[6]),
+	.start(spi_start),
+	.busy(spi_busy),
 	.clk(clk),
 	.rst(~rst_n)
 );

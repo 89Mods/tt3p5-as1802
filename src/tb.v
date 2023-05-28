@@ -13,11 +13,14 @@ module tb (
 	input rst_n,
 	input intr,
 	input uart_rx,
+	input DI,
 	
 	input [3:0] EF,
 	
 	output Q,
-	output uart_tx
+	output uart_tx,
+	output SCLK,
+	output DO
 );
 
 	// this part dumps the trace to a vcd file that can be viewed with GTKWave
@@ -43,8 +46,11 @@ module tb (
 	assign Q = uo_out[0];
 	wire CS_ROM = uo_out[1];
 	wire SCLK_ROM = uo_out[2];
-	wire CS_RAM = uo_out[5];
-	wire SCLK_RAM = uo_out[6];
+	wire CS_RAM = uo_out[3];
+	wire SCLK_RAM = uo_out[4];
+	
+	assign SCLK = uo_out[6];
+	assign DO = uo_out[7];
 	
 	wire [3:0] ROM_DO = uio_out[3:0];
 	wire [3:0] ROM_OEB = uio_oe[3:0];
@@ -60,7 +66,7 @@ module tb (
 	assign IO2_RAM = RAM_OEB[2] ? 1'bz : RAM_DO[2];
 	assign IO3_RAM = RAM_OEB[3] ? 1'bz : RAM_DO[3];
 	
-	assign uart_tx = uo_out[4];
+	assign uart_tx = uo_out[5];
 	
 	// instantiate the DUT
 	tt_um_as1802 as1802(
@@ -71,7 +77,7 @@ module tb (
 		.ena  (1'b1),
 		.clk (clk),
 		.rst_n(rst_n),
-		.ui_in({2'b00, uart_rx, intr, EF}),
+		.ui_in({1'b0, DI, uart_rx, intr, EF}),
 		.uo_out(uo_out),
 		.uio_in({IO3_RAM, IO2_RAM, IO1_RAM, IO0_RAM, IO3_ROM, IO2_ROM, IO1_ROM, IO0_ROM}),
 		.uio_out(uio_out),

@@ -34,33 +34,33 @@ documentation:
 
 # A description of what the inputs do
   inputs:               
-    - clock
-    - reset
-    - none
-    - none
-    - none
-    - none
-    - none
+    - EF0b
+    - EF1b
+    - EF2b
+    - EF3b
+    - INT
+    - RXD
+    - SI
     - none
 # A description of what the outputs do
   outputs:
-    - segment a
-    - segment b
-    - segment c
-    - segment d
-    - segment e
-    - segment f
-    - segment g
-    - slow clock output
+    - Q
+    - CS_ROM
+    - SCK_ROM
+    - CS_RAM
+    - SCK_RAM
+    - TXD
+    - SCK
+    - SO
   bidirectional:
-    - none
-    - none
-    - none
-    - none
-    - none
-    - none
-    - none
-    - none
+    - IO0_ROM
+    - IO1_ROM
+    - IO2_ROM
+    - IO3_ROM
+    - IO0_RAM
+    - IO1_RAM
+    - IO2_RAM
+    - IO3_RAM
     
 # The following fields are optional
   tag:          "microprocessor, test"      # comma separated list of tags: test encryption, experiment, clock, animation, utility, industrial, pwm, fpga, alu, microprocessor, risc, riscv, sensor, signal generator, fft, filter, music, bcd, sound, serial, timer, random number generator, calculator, decoder, counter, puzzle, multiplier, game, oscillator,

@@ -43,6 +43,7 @@ async def test_cpu(dut):
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
 
+    dut.DI.value = 0
     dut.uart_rx.value = 1
     dut.intr.value = 0
     dut._log.info("reset")
@@ -59,6 +60,39 @@ async def test_cpu(dut):
 
     await test_uart_rec(dut, 0x16)
     await test_uart_rec(dut, 0x34)
+    
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 0
+    dut.DI.value = 1
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 1
+    dut.DI.value = 0
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 1
+    dut.DI.value = 1
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 1
+    dut.DI.value = 1
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 0
+    dut.DI.value = 0
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 0
+    dut.DI.value = 0
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 0
+    dut.DI.value = 1
+    await FallingEdge(dut.SCLK)
+    await RisingEdge(dut.SCLK)
+    assert dut.DO.value == 1
+    
+    await test_uart_rec(dut, 0b01011001)
     
     await RisingEdge(dut.Q)
     await ClockCycles(dut.clk, 32)

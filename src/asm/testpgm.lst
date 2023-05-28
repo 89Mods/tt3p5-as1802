@@ -78,6 +78,28 @@
          48 : FA 01              	ANI 1
          4A : 3A 47              	BNZ LOOP3
          4C :                    	
-         4C :                    END:
-         4C : 7B                 	SEQ
-         4D : 30 4C              	BR END
+         4C : F8 F4              	LDI 0b11110100
+         4E : A9                 	PLO R9
+         4F : F8 0C              	LDI 12
+         51 : 59                 	STR R9
+         52 : 19                 	INC R9
+         53 : F8 71              	LDI 0x71
+         55 : 59                 	STR R9
+         56 :                    LOOP4:
+         56 : 0A                 	LDN R10
+         57 : FA 04              	ANI 4
+         59 : 3A 56              	BNZ LOOP4
+         5B :                    	
+         5B : 29                 	DEC R9
+         5C : 09                 	LDN R9
+         5D : 29                 	DEC R9
+         5E : 29                 	DEC R9
+         5F : 59                 	STR R9
+         60 :                    LOOP5:
+         60 : 0A                 	LDN R10
+         61 : FA 01              	ANI 1
+         63 : 3A 60              	BNZ LOOP5
+         65 :                    	
+         65 :                    END:
+         65 : 7B                 	SEQ
+         66 : 30 65              	BR END
