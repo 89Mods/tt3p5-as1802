@@ -1,6 +1,6 @@
 `default_nettype none
 
-module tt_um_as1802 #(parameter DFFRAM_SIZE = 196)(
+module tt_um_as1802 #(parameter DFFRAM_SIZE = 148)(
   input [7:0] ui_in,
   output [7:0] uo_out,
   input [7:0] uio_in,
