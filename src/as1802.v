@@ -13,6 +13,7 @@ module tt_um_as1802 #(parameter DFFRAM_SIZE = 128)(
 
 reg [15:0] regs [15:0];
 reg [7:0] D;
+reg [7:0] MHI;
 reg DF;
 reg [7:0] B;
 reg [7:0] instr_latch;
@@ -68,6 +69,7 @@ reg [7:0] mem_cycle;
 reg [5:0] startup_cycle;
 reg [3:0] instr_cycle;
 
+reg EXTEND;
 wire [3:0] op_high = instr_latch[7:4];
 wire [3:0] ireg_addr = instr_latch[3:0];
 wire [15:0] sel_reg = regs[ireg_addr];
@@ -175,6 +177,7 @@ always @(posedge clk) begin
 		Q_l <= 0;
 		DF <= 0;
 		D <= 0;
+		MHI <= 0;
 		T <= 0;
 		RAM_delay_cycs <= 6;
 		CS_ROM <= 1;
@@ -189,6 +192,7 @@ always @(posedge clk) begin
 		instr_cycle <= 0;
 		startup_cycle <= 1;
 		spi_cycle <= 0;
+		EXTEND <= 0;
 		will_interrupt <= 0;
 		mem_cycle <= 0;
 	end else begin
@@ -602,6 +606,7 @@ always @(posedge clk) begin
 					instr_cycle <= 1;
 				end
 			end else begin
+				EXTEND <= instr_latch == 8'h68;
 				if(op_high == 0) begin
 					if(instr_latch[3:0] == 0) begin //IDL
 						idle <= 1;
@@ -654,7 +659,7 @@ always @(posedge clk) begin
 					if(instr_latch[3:0] == 0) begin //IRX
 						regs[X] <= regs[X] + 1;
 					end else if(instr_latch[3:0] == 8) begin
-					
+						
 					end else begin
 						if(instr_latch[3]) begin //INP
 							D <= 0;
@@ -771,13 +776,21 @@ always @(posedge clk) begin
 					D <= sel_reg[7:0];
 					instr_cycle <= 0;
 				end else if(op_high == 9) begin //GHI [reg]
-					D <= sel_reg[15:8];
+					if(EXTEND) begin
+						D <= MHI;
+					end else begin
+						D <= sel_reg[15:8];
+					end
 					instr_cycle <= 0;
 				end else if(op_high == 10) begin //PLO [reg]
 					regs[ireg_addr][7:0] <= D;
 					instr_cycle <= 0;
 				end else if(op_high == 11) begin //PHI [reg]
-					regs[ireg_addr][15:8] <= D;
+					if(EXTEND) begin
+						MHI <= ireg_addr == 0 ? 0 : D;
+					end else begin
+						regs[ireg_addr][15:8] <= D;
+					end
 					instr_cycle <= 0;
 				end else if(op_high == 12) begin //skips & long branch (& NOP)
 					if(instr_latch[3:0] == 4) begin
@@ -856,12 +869,20 @@ always @(posedge clk) begin
 								end
 								4: begin
 									//ADD,ADI
-									{DF, D} <= D + B;
+									if(EXTEND) begin
+										{MHI, D} <= D * B;
+									end else begin
+										{DF, D} <= D + B;
+									end
 								end
 								5: begin
 									//SD,SDI
-									D <= B + ~D + 1;
-									DF <= ~(B < D);
+									if(EXTEND) begin
+										{MHI, D} <= {MHI, D} / B;
+									end else begin
+										D <= B + ~D + 1;
+										DF <= ~(B < D);
+									end
 								end
 								6: begin
 									if(instr_latch[3]) begin
