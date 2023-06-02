@@ -27,11 +27,11 @@ documentation:
 
 # Longer description of how the project works. You can use standard markdown format.
   how_it_works: |
-      testttesttest
+      Based on the CDP1802 core I developed for TMBoC, but with a different memory interface to make it use Q-SPI ROM and RAM chips. Tested with W25Q128 ROM. Supported RAM component is LY68L6400.
 
 # Instructions on how someone could test your project, include things like what buttons do what and how to set the clock if needed
   how_to_test:  |
-      ---
+      Wire up a W25QXX(X) ROM as indicated by the pinout, and pre-load it with the assembled example program in the README. It should blink the Q output.
 
 # A description of what the inputs do
   inputs:               
@@ -46,18 +46,18 @@ documentation:
 # A description of what the outputs do
   outputs:
     - Q
-    - CS_ROM
-    - SCK_ROM
-    - CS_RAM
+    - CSB_ROM (W25Q: CS)
+    - SCK_ROM (W25Q: CLK)
+    - CSB_RAM
     - SCK_RAM
     - TXD
     - SCK
     - SO
   bidirectional:
-    - IO0_ROM
-    - IO1_ROM
-    - IO2_ROM
-    - IO3_ROM
+    - IO0_ROM (W25Q: DI)
+    - IO1_ROM (W25Q: DO)
+    - IO2_ROM (W25Q: WP)
+    - IO3_ROM (W25Q: HOLD)
     - IO0_RAM
     - IO1_RAM
     - IO2_RAM
@@ -65,7 +65,7 @@ documentation:
     
 # The following fields are optional
   tag:          "microprocessor, test"      # comma separated list of tags: test encryption, experiment, clock, animation, utility, industrial, pwm, fpga, alu, microprocessor, risc, riscv, sensor, signal generator, fft, filter, music, bcd, sound, serial, timer, random number generator, calculator, decoder, counter, puzzle, multiplier, game, oscillator,
-  external_hw:  ""      # Describe any external hardware needed
+  external_hw:  "W25Q-series ROM for program storage, LY68L6800 RAM for data memory."      # Describe any external hardware needed
   discord:      "tholin#7559"      # Your discord handle, used for communication and automatically assigning tapeout role after a submission
   doc_link:     ""      # URL to longer form documentation, eg the README.md in your repository
   clock_hz:     1000000       # Clock frequency in Hz (if required)

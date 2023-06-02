@@ -1,35 +1,54 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg)
 
-# What is Tiny Tapeout?
+# AS1802 for TinyTapeout 3.5
 
-TinyTapeout is an educational project that aims to make it easier and cheaper than ever to get your digital designs manufactured on a real chip!
+A microcontrolled based on the AS1802 core I developed for [TMBoC](https://github.com/AvalonSemiconductors/TMBoC), but using Q-SPI memories for RAM and ROM. Also has 128 bytes of on-chip RAM, so wiring up external RAM is not required.
 
-Go to https://tinytapeout.com for instructions!
+For ROM, please use a W25Q-series chip (recommended W25Q32). For RAM, only the LY68L6400 is supported.
 
-## How to change the Wokwi project
+I/O consists of one UART, one general-purpose SPI port, 4 input ports and one output port. For more I/O, the SPI bus may be used.
 
-Edit the [info.yaml](info.yaml) and change the wokwi_id to match your project.
+## Memory Map
 
-## How to enable the GitHub actions to build the ASIC files
+The AS1802 has an address range of 64KiB. Addresses 0000h - 7FFFh are mapped to the first 32KiB of ROM. 8000h - 80FFh map to internal RAM, 8100h - FFEFh to external RAM. I/O devices are memory-mapped to FFF0h - FFFFh.
 
-Please see the instructions for:
+See this table for a list of memory-mapped IOs:
 
-* [Enabling GitHub Actions](https://tinytapeout.com/faq/#when-i-commit-my-change-the-gds-action-isnt-running)
-* [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+| Address | Function (read) | Function (write) |
+| ------- | --------------- | ---------------- |
+| FFF0h   | UART clock div (low byte) | UART clock div (low byte) |
+| FFF1h   | UART clock div (high byte) | UART clock div (high byte) |
+| FFF2h   | UART receive buffer | UART send buffer |
+| FFF3h   | SPI and UART status | RAM dummy cycle count |
+| FFF4h   | SPI receive buffer | SPI clock div |
+| FFF5h   | 0 | SPI send buffer |
 
-## How does it work?
+Unused I/O locations FFF6h - FFFFh will return 0 when read, and have no effect when written.
 
-When you edit the info.yaml to choose a different ID, the [GitHub Action](.github/workflows/gds.yaml) will fetch the digital netlist of your design from Wokwi.
+## Note on external RAM interface
 
-After that, the action uses the open source ASIC tool called [OpenLane](https://www.zerotoasiccourse.com/terminology/openlane/) to build the files needed to fabricate an ASIC.
+The LY68L6400 requires a series of dummy cycles between address and data on reads. However, the amount of dummy cycles required may change depending on CPU clock speed, so the length of this delay is configurable by writing to IO location FFF3h (TODO: test if this is actually the case).
 
-## Resources
+## Test program
 
-* [FAQ](https://tinytapeout.com/faq/)
-* [Digital design lessons](https://tinytapeout.com/digital_design/)
-* [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-* [Join the community](https://discord.gg/rPK2nSjxy8)
+The following short test program will blink the Q output.
 
-## What next?
-
-* Share your GDS on Twitter, tag it [#tinytapeout](https://twitter.com/hashtag/tinytapeout?src=hashtag_click) and [link me](https://twitter.com/matthewvenn)!
+``
+START: org 0
+	DIS
+	db 0
+	LDI 0
+CLEAR:
+	REQ
+DELAY:
+	NOP
+	NOP
+	NOP
+	NOP
+	ADI 1
+	BNDF DELAY
+	BQ CLEAR
+	LDI 0
+	SEQ
+	BR DELAY
+``

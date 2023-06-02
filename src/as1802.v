@@ -749,7 +749,11 @@ always @(posedge clk) begin
 							end
 							11: begin
 								//SEQ
-								Q_l <= 1;
+								if(EXTEND) begin
+									D <= {D[3:0], D[7:0]};
+								end else begin
+									Q_l <= 1;
+								end
 							end
 							12: begin
 								//ADCI
