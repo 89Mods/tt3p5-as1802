@@ -750,7 +750,7 @@ always @(posedge clk) begin
 							11: begin
 								//SEQ
 								if(EXTEND) begin
-									D <= {D[3:0], D[7:0]};
+									D <= {D[3:0], D[7:4]};
 								end else begin
 									Q_l <= 1;
 								end
