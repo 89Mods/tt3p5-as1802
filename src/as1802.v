@@ -44,7 +44,7 @@ assign uo_out[2] = SCLK_ROM;
 reg [3:0] ROM_DO;
 reg [3:0] ROM_OEB;
 assign uio_out[3:0] = ROM_DO;
-assign uio_oe[3:0] = ROM_OEB;
+assign uio_oe[3:0] = ~ROM_OEB;
 wire [3:0] ROM_DAT = uio_in[3:0];
 
 reg CS_RAM;
@@ -54,7 +54,7 @@ assign uo_out[4] = SCLK_RAM;
 reg [3:0] RAM_DO;
 reg [3:0] RAM_OEB;
 assign uio_out[7:4] = RAM_DO;
-assign uio_oe[7:4] = RAM_OEB;
+assign uio_oe[7:4] = ~RAM_OEB;
 wire [3:0] RAM_DAT = uio_in[7:4];
 
 reg [7:0] data_in;
@@ -878,7 +878,7 @@ always @(posedge clk) begin
 								5: begin
 									//SD,SDI
 									if(EXTEND) begin
-										{MHI, D} <= {MHI, D} / B;
+										D <= D / B;
 									end else begin
 										D <= B + ~D + 1;
 										DF <= ~(B < D);

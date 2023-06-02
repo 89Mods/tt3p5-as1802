@@ -53,18 +53,18 @@ module tb (
 	assign DO = uo_out[7];
 	
 	wire [3:0] ROM_DO = uio_out[3:0];
-	wire [3:0] ROM_OEB = uio_oe[3:0];
-	assign IO0_ROM = ROM_OEB[0] ? 1'bz : ROM_DO[0];
-	assign IO1_ROM = ROM_OEB[1] ? 1'bz : ROM_DO[1];
-	assign IO2_ROM = ROM_OEB[2] ? 1'bz : ROM_DO[2];
-	assign IO3_ROM = ROM_OEB[3] ? 1'bz : ROM_DO[3];
+	wire [3:0] ROM_OE = uio_oe[3:0];
+	assign IO0_ROM = ROM_OE[0] ? ROM_DO[0] : 1'bz;
+	assign IO1_ROM = ROM_OE[1] ? ROM_DO[1] : 1'bz;
+	assign IO2_ROM = ROM_OE[2] ? ROM_DO[2] : 1'bz;
+	assign IO3_ROM = ROM_OE[3] ? ROM_DO[3] : 1'bz;
 	
 	wire [3:0] RAM_DO = uio_out[7:4];
-	wire [3:0] RAM_OEB = uio_oe[7:4];
-	assign IO0_RAM = RAM_OEB[0] ? 1'bz : RAM_DO[0];
-	assign IO1_RAM = RAM_OEB[1] ? 1'bz : RAM_DO[1];
-	assign IO2_RAM = RAM_OEB[2] ? 1'bz : RAM_DO[2];
-	assign IO3_RAM = RAM_OEB[3] ? 1'bz : RAM_DO[3];
+	wire [3:0] RAM_OE = uio_oe[7:4];
+	assign IO0_RAM = RAM_OE[0] ? RAM_DO[0] : 1'bz;
+	assign IO1_RAM = RAM_OE[1] ? RAM_DO[1] : 1'bz;
+	assign IO2_RAM = RAM_OE[2] ? RAM_DO[2] : 1'bz;
+	assign IO3_RAM = RAM_OE[3] ? RAM_DO[3] : 1'bz;
 	
 	assign uart_tx = uo_out[5];
 	
