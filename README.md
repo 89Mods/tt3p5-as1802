@@ -33,7 +33,7 @@ The LY68L6400 requires a series of dummy cycles between address and data on read
 
 The following short test program will blink the Q output.
 
-``
+```
 START: org 0
 	DIS
 	db 0
@@ -51,4 +51,4 @@ DELAY:
 	LDI 0
 	SEQ
 	BR DELAY
-``
+```
