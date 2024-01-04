@@ -1,3 +1,7 @@
 src/sim_build/
 src/__pycache__/
 *.vcd
+src/run_pgm/sim_build/
+src/run_pgm/__pycache__/
+*.vcd
+*.gtkw

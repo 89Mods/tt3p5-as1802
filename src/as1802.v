@@ -136,6 +136,8 @@ wire [15:0] PC = regs[P];
 wire [15:0] SP = regs[X];
 
 wire flag_init_done = startup_cycle == 0;
+
+wire FLAG = instr_latch == 8'h77;
 `endif
 
 //UART REGS

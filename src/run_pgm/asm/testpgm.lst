@@ -1,0 +1,2399 @@
+          0 : =0                 R0 equ 0
+          0 : =1                 R1 equ 1
+          0 : =2                 R2 equ 2
+          0 : =3                 R3 equ 3
+          0 : =4                 R4 equ 4
+          0 : =5                 R5 equ 5
+          0 : =6                 R6 equ 6
+          0 : =7                 R7 equ 7
+          0 : =8                 R8 equ 8
+          0 : =9                 R9 equ 9
+          0 : =A                 R10 equ 10
+          0 : =B                 R11 equ 11
+          0 : =C                 R12 equ 12
+          0 : =D                 R13 equ 13
+          0 : =E                 R14 equ 14
+          0 : =F                 R15 equ 15
+          0 :
+          0 :                    ; Memory locations
+          0 : =8000              MIN00 equ 0x8000
+          0 : =8001              MIN01 equ 0x8001
+          0 : =8002              MIN02 equ 0x8002
+          0 : =8003              MIN03 equ 0x8003
+          0 : =8004              MIN10 equ 0x8004
+          0 : =8005              MIN11 equ 0x8005
+          0 : =8006              MIN12 equ 0x8006
+          0 : =8007              MIN13 equ 0x8007
+          0 : =8008              MRES0 equ 0x8008
+          0 : =8009              MRES1 equ 0x8009
+          0 : =800A              MRES2 equ 0x800A
+          0 : =800B              MRES3 equ 0x800B
+          0 : =800C              MRES4 equ 0x800C
+          0 : =800D              MRES5 equ 0x800D
+          0 : =800E              MRES6 equ 0x800E
+          0 : =800F              MRES7 equ 0x800F
+          0 :                    ; Danger: intentionally overlap between TEMP and DIN to save memory!
+          0 : =8010              TEMP0 equ 0x8010
+          0 : =8011              TEMP1 equ 0x8011
+          0 : =8012              TEMP2 equ 0x8012
+          0 : =8013              TEMP3 equ 0x8013
+          0 : =8010              DIN00 equ 0x8010
+          0 : =8011              DIN01 equ 0x8011
+          0 : =8012              DIN02 equ 0x8012
+          0 : =8013              DIN03 equ 0x8013
+          0 : =8014              DIN04 equ 0x8014
+          0 : =8015              DIN05 equ 0x8015
+          0 : =8016              SQRT_RESULT0 equ 0x8016
+          0 : =8017              SQRT_RESULT1 equ 0x8017
+          0 : =8018              SQRT_RESULT2 equ 0x8018
+          0 : =8019              SQRT_RESULT3 equ 0x8019
+          0 :
+          0 :                    ; Register conventions
+          0 :                    ; R2 always points to SPI_WAIT subroutine for fast access
+          0 :                    ; R9 points to memory-mapped IO locations (R9.1 never needs to be reloaded as a result)
+          0 :                    ; R0 is the default PC
+          0 :                    ; R1 is the default SP
+          0 :                    ; R6 is the standard subroutine PC (for any other routine than SPI_WAIT)
+          0 :                    ; Leaving R3, R4, R5, R7 and R8 - R15 free
+          0 :                    ; R3, R4, R5, R7 and R9.1 need to be pushed to stack if used by subroutine
+          0 :                    	
+          0 :                    	org 0
+          0 :                    START:
+          0 : C4                 	NOP
+          1 : F8 41              	LDI SPI_WAIT&0xFF
+          3 : A2                 	PLO R2
+          4 : F8 00              	LDI SPI_WAIT>>8
+          6 : B2                 	PHI R2
+          7 : F8 FF              	LDI 0xFF
+          9 : B9                 	PHI R9
+          A : F8 F4              	LDI 0xF4
+          C : A9                 	PLO R9
+          D : E9                 	SEX R9
+          E :                    	
+          E :                    	; SPI clock div
+          E : F8 20              	LDI 32
+         10 : 73                 	STXD
+         11 :                    	; Transmit 0 as sync char
+         11 : F8 00              	LDI 0
+         13 : 73                 	STXD
+         14 : D2                 	SEP R2
+         15 :                    	
+         15 :                    	; Stack at 0x807F
+         15 : F8 80              	LDI 0x80
+         17 : B1                 	PHI R1
+         18 : F8 7F              	LDI 0x7F
+         1A : A1                 	PLO R1
+         1B : E1                 	SEX R1
+         1C :                    	
+         1C :                    	; Print Hello Message
+         1C : F8 0A              	LDI HELLO_TEXT>>8
+         1E : B3                 	PHI R3
+         1F : F8 19              	LDI HELLO_TEXT&255
+         21 : A3                 	PLO R3
+         22 : F8 F5              	LDI 0xF5
+         24 : A9                 	PLO R9
+         25 :                    PRINT_LOOP:
+         25 : 03                 	LDN R3
+         26 : 13                 	INC R3
+         27 : 32 2D              	BZ PRINT_LOOP_DONE
+         29 : 59                 	STR R9
+         2A : D2                 	SEP R2
+         2B : 30 25              	BR PRINT_LOOP
+         2D :                    PRINT_LOOP_DONE:
+         2D :
+         2D :                    	; For several reasons, we want all subroutines to be defined before the main program code
+         2D :                    	; So let’s do that, and branch to the rest of the program here
+         2D : C0 07 2C           	LBR TEST_MUL
+         30 :
+         30 :                    	; Infinite loop of blinking Q
+         30 :                    END:
+         30 : CD                 	LSQ
+         31 : 7B                 	SEQ
+         32 : 38                 	SKP
+         33 : 7A                 	REQ
+         34 : F8 FF              	LDI 0xFF
+         36 : B9                 	PHI R9
+         37 : A9                 	PLO R9
+         38 :                    END_LOOP:
+         38 : 29                 	DEC R9
+         39 : 99                 	GHI R9
+         3A : 3A 38              	BNZ END_LOOP
+         3C : 89                 	GLO R9
+         3D : 3A 38              	BNZ END_LOOP
+         3F : 30 30              	BR END
+         41 :
+         41 :                    	; Wait for SPI TX complete subroutine
+         41 :                    SPI_WAIT:
+         41 : 89                 	GLO R9
+         42 : 73                 	STXD
+         43 : F8 F3              	LDI 0xF3
+         45 : A9                 	PLO R9
+         46 :                    SPI_WAIT_LOOP:
+         46 : 09                 	LDN R9
+         47 : FA 04              	ANI 4
+         49 : 3A 46              	BNZ SPI_WAIT_LOOP
+         4B : 60                 	IRX
+         4C : F0                 	LDX
+         4D : A9                 	PLO R9
+         4E : D0                 	SEP R0
+         4F : 30 41              	BR SPI_WAIT
+         51 :
+         51 :                    	; Display a string of memory as hex
+         51 :                    	; R3 = Pointer to most-significant byte
+         51 :                    	; R4.0 = Length of string
+         51 :                    PRINT_HEX:
+         51 : 89                 	GLO R9
+         52 : 73                 	STXD
+         53 : 80                 	GLO R0
+         54 : 73                 	STXD
+         55 : 90                 	GHI R0
+         56 : 73                 	STXD
+         57 : 94                 	GHI R4
+         58 : 73                 	STXD
+         59 : 85                 	GLO R5
+         5A : 73                 	STXD
+         5B : 95                 	GHI R5
+         5C : 73                 	STXD
+         5D : F8 79              	LDI PRINT_HEX_LOOP&255
+         5F : A0                 	PLO R0
+         60 : F8 00              	LDI PRINT_HEX_LOOP>>8
+         62 : B0                 	PHI R0
+         63 : D0                 	SEP R0
+         64 : 60                 	IRX
+         65 : F0                 	LDX
+         66 : B5                 	PHI R5
+         67 : 60                 	IRX
+         68 : F0                 	LDX
+         69 : A5                 	PLO R5
+         6A : 60                 	IRX
+         6B : F0                 	LDX
+         6C : B4                 	PHI R4
+         6D : 60                 	IRX
+         6E : F0                 	LDX
+         6F : B0                 	PHI R0
+         70 : 60                 	IRX
+         71 : F0                 	LDX
+         72 : A0                 	PLO R0
+         73 : 60                 	IRX
+         74 : F0                 	LDX
+         75 : A9                 	PLO R9
+         76 : D0                 	SEP R0
+         77 : 30 51              	BR PRINT_HEX
+         79 :                    PRINT_HEX_LOOP:
+         79 : F8 F5              	LDI 0xF5
+         7B : A9                 	PLO R9
+         7C : 03                 	LDN R3
+         7D : 23                 	DEC R3
+         7E : B4                 	PHI R4
+         7F : F6                 	SHR
+         80 : F6                 	SHR
+         81 : F6                 	SHR
+         82 : F6                 	SHR
+         83 : FC 39              	ADI HEX_DIGITS&255
+         85 : A5                 	PLO R5
+         86 : F8 00              	LDI 0
+         88 : 7C 0A              	ADCI HEX_DIGITS>>8
+         8A : B5                 	PHI R5
+         8B : 05                 	LDN R5
+         8C : 59                 	STR R9
+         8D : D2                 	SEP R2
+         8E : 94                 	GHI R4
+         8F : FA 0F              	ANI 15
+         91 : FC 39              	ADI HEX_DIGITS&255
+         93 : A5                 	PLO R5
+         94 : F8 00              	LDI 0
+         96 : 7C 0A              	ADCI HEX_DIGITS>>8
+         98 : B5                 	PHI R5
+         99 : 05                 	LDN R5
+         9A : 59                 	STR R9
+         9B : D2                 	SEP R2
+         9C : 84                 	GLO R4
+         9D : FF 01              	SMI 1
+         9F : A4                 	PLO R4
+         A0 : 3A 79              	BNZ PRINT_HEX_LOOP
+         A2 : D6                 	SEP R6
+         A3 :
+         A3 :                    MUL_8x32:
+         A3 : F8 80              	LDI MIN10>>8
+         A5 : B3                 	PHI R3
+         A6 : F8 04              	LDI MIN10&255
+         A8 : A3                 	PLO R3
+         A9 : 43                 	LDA R3
+         AA : AA                 	PLO R10
+         AB : 43                 	LDA R3
+         AC : BA                 	PHI R10
+         AD : 43                 	LDA R3
+         AE : AB                 	PLO R11
+         AF : 43                 	LDA R3
+         B0 : BB                 	PHI R11
+         B1 : F8 00              	LDI 0
+         B3 : B8                 	PHI R8
+         B4 : E3                 	SEX R3
+         B5 :                    MUL_8x32_LOOP:
+         B5 : 88                 	GLO R8
+         B6 : F6                 	SHR
+         B7 : A8                 	PLO R8
+         B8 : 3B D0              	BNF MUL_8x32_NO_CARRY
+         BA : F8 0B              	LDI MRES3&255
+         BC : A3                 	PLO R3
+         BD : 8A                 	GLO R10
+         BE : F4                 	ADD
+         BF : 53                 	STR R3
+         C0 : 13                 	INC R3
+         C1 : 9A                 	GHI R10
+         C2 : 74                 	ADC
+         C3 : 53                 	STR R3
+         C4 : 13                 	INC R3
+         C5 : 8B                 	GLO R11
+         C6 : 74                 	ADC
+         C7 : 53                 	STR R3
+         C8 : 13                 	INC R3
+         C9 : 9B                 	GHI R11
+         CA : 74                 	ADC
+         CB : 53                 	STR R3
+         CC : 13                 	INC R3
+         CD : 98                 	GHI R8
+         CE : 74                 	ADC
+         CF : 53                 	STR R3
+         D0 :                    MUL_8x32_NO_CARRY:
+         D0 : 8A                 	GLO R10
+         D1 : FE                 	SHL
+         D2 : AA                 	PLO R10
+         D3 : 9A                 	GHI R10
+         D4 : 7E                 	SHLC
+         D5 : BA                 	PHI R10
+         D6 : 8B                 	GLO R11
+         D7 : 7E                 	SHLC
+         D8 : AB                 	PLO R11
+         D9 : 9B                 	GHI R11
+         DA : 7E                 	SHLC
+         DB : BB                 	PHI R11
+         DC : 98                 	GHI R8
+         DD : 7E                 	SHLC
+         DE : B8                 	PHI R8
+         DF : 88                 	GLO R8
+         E0 : CA 00 B5           	LBNZ MUL_8x32_LOOP
+         E3 : E1                 	SEX R1
+         E4 : D6                 	SEP R6
+         E5 : C0 00 A3           	LBR MUL_8x32
+         E8 :
+         E8 :                    ZERO_MUL_RES:
+         E8 : F8 80              	LDI MRES7>>8
+         EA : B3                 	PHI R3
+         EB : F8 0F              	LDI MRES7&255
+         ED : A3                 	PLO R3
+         EE : F8 00              	LDI 0
+         F0 : E3                 	SEX R3
+         F1 : 73                 	STXD
+         F2 : 73                 	STXD
+         F3 : 73                 	STXD
+         F4 : 73                 	STXD
+         F5 : 73                 	STXD
+         F6 : 73                 	STXD
+         F7 : 73                 	STXD
+         F8 : 73                 	STXD
+         F9 : E1                 	SEX R1
+         FA : C0 01 6A           	LBR ZERO_MUL_RES_DONE
+         FD :
+         FD :                    	; R15.0 stores sign of result
+         FD :                    MUL_32x32_SIGNED:
+         FD : F8 00              	LDI 0
+         FF : AF                 	PLO R15
+        100 : F8 80              	LDI MIN03>>8
+        102 : BD                 	PHI R13
+        103 : F8 03              	LDI MIN03&255
+        105 : AD                 	PLO R13
+        106 : 4D                 	LDA R13
+        107 : FA 80              	ANI 128
+        109 : C2 01 30           	LBZ MUL_32x32_NOT_NEG_A
+        10C : F8 80              	LDI MIN00>>8
+        10E : BC                 	PHI R12
+        10F : F8 00              	LDI MIN00&255
+        111 : AC                 	PLO R12
+        112 : 0C                 	LDN R12
+        113 : FB FF              	XRI 0xFF
+        115 : FC 01              	ADI 1
+        117 : 5C                 	STR R12
+        118 : 1C                 	INC R12
+        119 : 0C                 	LDN R12
+        11A : FB FF              	XRI 0xFF
+        11C : 7C 00              	ADCI 0
+        11E : 5C                 	STR R12
+        11F : 1C                 	INC R12
+        120 : 0C                 	LDN R12
+        121 : FB FF              	XRI 0xFF
+        123 : 7C 00              	ADCI 0
+        125 : 5C                 	STR R12
+        126 : 1C                 	INC R12
+        127 : 0C                 	LDN R12
+        128 : FB FF              	XRI 0xFF
+        12A : 7C 00              	ADCI 0
+        12C : 5C                 	STR R12
+        12D : F8 01              	LDI 1
+        12F : AF                 	PLO R15
+        130 :                    MUL_32x32_NOT_NEG_A:
+        130 : 1D                 	INC R13
+        131 : 1D                 	INC R13
+        132 : 1D                 	INC R13
+        133 : 0D                 	LDN R13
+        134 : FA 80              	ANI 128
+        136 : C2 01 5E           	LBZ MUL_32x32_NOT_NEG_B
+        139 : F8 04              	LDI MIN10&255
+        13B : AC                 	PLO R12
+        13C : F8 80              	LDI MIN10>>8
+        13E : BC                 	PHI R12
+        13F : 0C                 	LDN R12
+        140 : FB FF              	XRI 0xFF
+        142 : FC 01              	ADI 1
+        144 : 5C                 	STR R12
+        145 : 1C                 	INC R12
+        146 : 0C                 	LDN R12
+        147 : FB FF              	XRI 0xFF
+        149 : 7C 00              	ADCI 0
+        14B : 5C                 	STR R12
+        14C : 1C                 	INC R12
+        14D : 0C                 	LDN R12
+        14E : FB FF              	XRI 0xFF
+        150 : 7C 00              	ADCI 0
+        152 : 5C                 	STR R12
+        153 : 1C                 	INC R12
+        154 : 0C                 	LDN R12
+        155 : FB FF              	XRI 0xFF
+        157 : 7C 00              	ADCI 0
+        159 : 5C                 	STR R12
+        15A : 8F                 	GLO R15
+        15B : FB 01              	XRI 1
+        15D : AF                 	PLO R15
+        15E :                    MUL_32x32_NOT_NEG_B:
+        15E :                    	
+        15E : 8F                 	GLO R15
+        15F : C8                 	LSKP
+        160 :                    MUL_32x32_UNSIGNED:
+        160 : F8 00              	LDI 0
+        162 : AF                 	PLO R15
+        163 : 83                 	GLO R3
+        164 : 73                 	STXD
+        165 : 93                 	GHI R3
+        166 : 73                 	STXD
+        167 : C0 00 E8           	LBR ZERO_MUL_RES
+        16A :                    ZERO_MUL_RES_DONE:
+        16A : F8 04              	LDI 4
+        16C : BF                 	PHI R15
+        16D : F8 80              	LDI MIN00>>8
+        16F : BD                 	PHI R13
+        170 : F8 00              	LDI MIN00&255
+        172 : AD                 	PLO R13
+        173 : F8 00              	LDI MUL_8x32>>8
+        175 : BC                 	PHI R12
+        176 : F8 A3              	LDI MUL_8x32&255
+        178 : AC                 	PLO R12
+        179 :                    MUL_32x32_LOOP:
+        179 :
+        179 :                    	; result >>= 8
+        179 : F8 80              	LDI MRES1>>8
+        17B : B3                 	PHI R3
+        17C : F8 09              	LDI MRES1&255
+        17E : A3                 	PLO R3
+        17F : F8 07              	LDI 7
+        181 : AE                 	PLO R14
+        182 :                    MUL_32x32_SHIFT_RES_LOOP:
+        182 : 03                 	LDN R3
+        183 : 23                 	DEC R3
+        184 : 53                 	STR R3
+        185 : 13                 	INC R3
+        186 : 13                 	INC R3
+        187 : 8E                 	GLO R14
+        188 : FF 01              	SMI 1
+        18A : AE                 	PLO R14
+        18B : 3A 82              	BNZ MUL_32x32_SHIFT_RES_LOOP
+        18D : 23                 	DEC R3
+        18E : F8 00              	LDI 0
+        190 : 53                 	STR R3
+        191 :                    	
+        191 : 0D                 	LDN R13
+        192 : A8                 	PLO R8
+        193 : 1D                 	INC R13
+        194 : DC                 	SEP R12 ; mul 8x32
+        195 :                    	
+        195 : 9F                 	GHI R15
+        196 : FF 01              	SMI 1
+        198 : BF                 	PHI R15
+        199 : 3A 79              	BNZ MUL_32x32_LOOP
+        19B :                    	
+        19B : 8F                 	GLO R15
+        19C : C2 01 B5           	LBZ MUL_32x32_RES_NOT_NEG
+        19F :                    	; Sign of result is negative
+        19F :                    	; Negate result
+        19F : F8 80              	LDI MRES0>>8
+        1A1 : B3                 	PHI R3
+        1A2 : F8 08              	LDI MRES0&255
+        1A4 : A3                 	PLO R3
+        1A5 : F8 FF              	LDI 0xFF
+        1A7 : FC FF              	ADI 0xFF
+        1A9 :                    MUL_32x32_NEGATE_RES_LOOP:
+        1A9 : 03                 	LDN R3
+        1AA : FB FF              	XRI 0xFF
+        1AC : 7C 00              	ADCI 0
+        1AE : 53                 	STR R3
+        1AF : 13                 	INC R3
+        1B0 : 83                 	GLO R3
+        1B1 : FB 10              	XRI (MRES7+1)&255
+        1B3 : 3A A9              	BNZ MUL_32x32_NEGATE_RES_LOOP
+        1B5 :                    MUL_32x32_RES_NOT_NEG:
+        1B5 : 60                 	IRX
+        1B6 : F0                 	LDX
+        1B7 : B3                 	PHI R3
+        1B8 : 60                 	IRX
+        1B9 : F0                 	LDX
+        1BA : A3                 	PLO R3
+        1BB : D0                 	SEP R0
+        1BC : C0 01 60           	LBR MUL_32x32_UNSIGNED
+        1BF :
+        1BF :                    	; Pointer to LSB of int in R3
+        1BF :                    PRINTINT32:
+        1BF : 88                 	GLO R8
+        1C0 : 73                 	STXD
+        1C1 : 89                 	GLO R9
+        1C2 : 73                 	STXD
+        1C3 : 43                 	LDA R3
+        1C4 : AA                 	PLO R10
+        1C5 : 43                 	LDA R3
+        1C6 : BA                 	PHI R10
+        1C7 : 43                 	LDA R3
+        1C8 : AB                 	PLO R11
+        1C9 : 03                 	LDN R3
+        1CA : BB                 	PHI R11
+        1CB : 23                 	DEC R3
+        1CC : 23                 	DEC R3
+        1CD : 23                 	DEC R3
+        1CE : F8 00              	LDI 0
+        1D0 : AE                 	PLO R14
+        1D1 : A8                 	PLO R8
+        1D2 : F8 0A              	LDI PRINTINT32_DIVS>>8
+        1D4 : BF                 	PHI R15
+        1D5 : F8 49              	LDI PRINTINT32_DIVS&255
+        1D7 : AF                 	PLO R15
+        1D8 :                    PRINTINT32_LOOP:
+        1D8 : F8 00              	LDI 0
+        1DA : BE                 	PHI R14
+        1DB : EF                 	SEX R15
+        1DC :                    	; while(1) {
+        1DC :                    PRINTINT32_DIV_LOOP:
+        1DC : F8 FF              	LDI 0xFF
+        1DE : FC FF              	ADI 0xFF
+        1E0 :                    	; {R13, R12} = {R11, R10} - divs[i];
+        1E0 : 8A                 	GLO R10
+        1E1 : F4                 	ADD
+        1E2 : AC                 	PLO R12
+        1E3 : 60                 	IRX
+        1E4 : 9A                 	GHI R10
+        1E5 : 74                 	ADC
+        1E6 : BC                 	PHI R12
+        1E7 : 60                 	IRX
+        1E8 : 8B                 	GLO R11
+        1E9 : 74                 	ADC
+        1EA : AD                 	PLO R13
+        1EB : 9B                 	GHI R11
+        1EC : 60                 	IRX
+        1ED : 74                 	ADC
+        1EE : BD                 	PHI R13
+        1EF : 2F                 	DEC R15
+        1F0 : 2F                 	DEC R15
+        1F1 : 2F                 	DEC R15
+        1F2 :                    	; break if {R13, R12} < 0;
+        1F2 : 9D                 	GHI R13
+        1F3 : FA 80              	ANI 128
+        1F5 : CA 02 07           	LBNZ PRINTINT32_DIV_LOOP_END
+        1F8 :                    	; R14.1++;
+        1F8 : 9E                 	GHI R14
+        1F9 : FC 01              	ADI 1
+        1FB : BE                 	PHI R14
+        1FC :                    	; {R11, R10} = {R13, R12};
+        1FC : 8C                 	GLO R12
+        1FD : AA                 	PLO R10
+        1FE : 8D                 	GLO R13
+        1FF : AB                 	PLO R11
+        200 : 9D                 	GHI R13
+        201 : BB                 	PHI R11
+        202 : 9C                 	GHI R12
+        203 : BA                 	PHI R10
+        204 :                    	; }
+        204 : C0 01 DC           	LBR PRINTINT32_DIV_LOOP
+        207 :                    PRINTINT32_DIV_LOOP_END:
+        207 : E1                 	SEX R1
+        208 :                    	; if(R14.1 != 0 || flag || i == 9) {
+        208 : 8E                 	GLO R14
+        209 : FC 00              	ADI 0
+        20B : 3A 17              	BNZ PRINTINT32_DO_PRINT
+        20D : 9E                 	GHI R14
+        20E : FC 00              	ADI 0
+        210 : 3A 17              	BNZ PRINTINT32_DO_PRINT
+        212 : 88                 	GLO R8
+        213 : FB 09              	XRI 9
+        215 : 3A 29              	BNZ PRINTINT32_NO_PRINT
+        217 :                    PRINTINT32_DO_PRINT:
+        217 :                    	; set flag
+        217 : F8 79              	LDI 'y'
+        219 : AE                 	PLO R14
+        21A :                    	; print '0' + R14.1
+        21A : F8 F5              	LDI 0xF5
+        21C : A9                 	PLO R9
+        21D : 9E                 	GHI R14
+        21E : FC 30              	ADI '0'
+        220 : 59                 	STR R9
+        221 :                    	; inline SPI wait bc I’m lazy
+        221 : F8 F3              	LDI 0xF3
+        223 : A9                 	PLO R9
+        224 :                    PRINTINT32_SPI_WAIT_LOOP:
+        224 : 09                 	LDN R9
+        225 : FA 04              	ANI 4
+        227 : 3A 24              	BNZ PRINTINT32_SPI_WAIT_LOOP
+        229 :                    PRINTINT32_NO_PRINT:
+        229 :                    	; }
+        229 :                    	
+        229 : 1F                 	INC R15
+        22A : 1F                 	INC R15
+        22B : 1F                 	INC R15
+        22C : 1F                 	INC R15
+        22D : 88                 	GLO R8
+        22E : FC 01              	ADI 1
+        230 : A8                 	PLO R8
+        231 : FB 0A              	XRI 10
+        233 : CA 01 D8           	LBNZ PRINTINT32_LOOP
+        236 :                    	
+        236 : 60                 	IRX
+        237 : F0                 	LDX
+        238 : A9                 	PLO R9
+        239 : 60                 	IRX
+        23A : F0                 	LDX
+        23B : A8                 	PLO R8
+        23C : D0                 	SEP R0
+        23D : C0 01 BF           	LBR PRINTINT32
+        240 :
+        240 :                    	; Pointer to LSB of int in R3
+        240 :                    PRINTINT64:
+        240 : 88                 	GLO R8
+        241 : 73                 	STXD
+        242 : 98                 	GHI R8
+        243 : 73                 	STXD
+        244 : 89                 	GLO R9
+        245 : 73                 	STXD
+        246 : 82                 	GLO R2
+        247 : 73                 	STXD
+        248 : 92                 	GHI R2
+        249 : 73                 	STXD
+        24A : 83                 	GLO R3
+        24B : 73                 	STXD
+        24C : 93                 	GHI R3
+        24D : 73                 	STXD
+        24E : 84                 	GLO R4
+        24F : 73                 	STXD
+        250 : 94                 	GHI R4
+        251 : 73                 	STXD
+        252 : 85                 	GLO R5
+        253 : 73                 	STXD
+        254 : 95                 	GHI R5
+        255 : 73                 	STXD
+        256 :                    	
+        256 : F8 00              	LDI 0
+        258 : AE                 	PLO R14
+        259 : 88                 	GLO R8
+        25A : 43                 	LDA R3
+        25B : AA                 	PLO R10
+        25C : 43                 	LDA R3
+        25D : BA                 	PHI R10
+        25E : 43                 	LDA R3
+        25F : AB                 	PLO R11
+        260 : 43                 	LDA R3
+        261 : BB                 	PHI R11
+        262 : 43                 	LDA R3
+        263 : AC                 	PLO R12
+        264 : 43                 	LDA R3
+        265 : BC                 	PHI R12
+        266 : 43                 	LDA R3
+        267 : AD                 	PLO R13
+        268 : 03                 	LDN R3
+        269 : BD                 	PHI R13
+        26A : F8 0A              	LDI PRINTINT64_DIVS>>8
+        26C : B2                 	PHI R2
+        26D : F8 71              	LDI PRINTINT64_DIVS&255
+        26F : A2                 	PLO R2
+        270 :                    PRINTINT64_LOOP:
+        270 : F8 00              	LDI 0
+        272 : BE                 	PHI R14
+        273 : E2                 	SEX R2
+        274 :                    PRINTINT64_DIV_LOOP:
+        274 : F8 FF              	LDI 0xFF
+        276 : FC FF              	ADI 0xFF
+        278 :                    	; {R15, R5, R3, R4} = {R13, R12, R11, R10} - divs[i];
+        278 : 8A                 	GLO R10
+        279 : F4                 	ADD
+        27A : A4                 	PLO R4
+        27B : 60                 	IRX
+        27C : 9A                 	GHI R10
+        27D : 74                 	ADC
+        27E : B4                 	PHI R4
+        27F : 8B                 	GLO R11
+        280 : 60                 	IRX
+        281 : 74                 	ADC
+        282 : A3                 	PLO R3
+        283 : 60                 	IRX
+        284 : 9B                 	GHI R11
+        285 : 74                 	ADC
+        286 : 60                 	IRX
+        287 : B3                 	PHI R3
+        288 : 8C                 	GLO R12
+        289 : 74                 	ADC
+        28A : A5                 	PLO R5
+        28B : 60                 	IRX
+        28C : 9C                 	GHI R12
+        28D : 74                 	ADC
+        28E : B5                 	PHI R5
+        28F : 60                 	IRX
+        290 : 8D                 	GLO R13
+        291 : 74                 	ADC
+        292 : AF                 	PLO R15
+        293 : 9D                 	GHI R13
+        294 : 60                 	IRX
+        295 : 74                 	ADC
+        296 : BF                 	PHI R15
+        297 : 22                 	DEC R2
+        298 : 22                 	DEC R2
+        299 : 22                 	DEC R2
+        29A : 22                 	DEC R2
+        29B : 22                 	DEC R2
+        29C : 22                 	DEC R2
+        29D : 22                 	DEC R2
+        29E :                    	; break if {R15, R5, R3, R4} < 0;
+        29E : 9F                 	GHI R15
+        29F : FA 80              	ANI 128
+        2A1 : 3A BA              	BNZ PRINTINT64_DIV_LOOP_END
+        2A3 :                    	; {R13, R12, R11, R10} = {R15, R5, R3, R4}
+        2A3 : 84                 	GLO R4
+        2A4 : AA                 	PLO R10
+        2A5 : 94                 	GHI R4
+        2A6 : BA                 	PHI R10
+        2A7 : 83                 	GLO R3
+        2A8 : AB                 	PLO R11
+        2A9 : 93                 	GHI R3
+        2AA : BB                 	PHI R11
+        2AB : 85                 	GLO R5
+        2AC : AC                 	PLO R12
+        2AD : 95                 	GHI R5
+        2AE : BC                 	PHI R12
+        2AF : 8F                 	GLO R15
+        2B0 : AD                 	PLO R13
+        2B1 : 9F                 	GHI R15
+        2B2 : BF                 	PHI R15
+        2B3 :                    	; R14.1++;
+        2B3 : 9E                 	GHI R14
+        2B4 : FC 01              	ADI 1
+        2B6 : BE                 	PHI R14
+        2B7 : C0 02 74           	LBR PRINTINT64_DIV_LOOP
+        2BA :                    PRINTINT64_DIV_LOOP_END:
+        2BA : E1                 	SEX R1
+        2BB :                    	; if(R14.1 != 0 || flag || i == 18) {
+        2BB : 8E                 	GLO R14
+        2BC : FC 00              	ADI 0
+        2BE : 3A CA              	BNZ PRINTINT64_DO_PRINT
+        2C0 : 9E                 	GHI R14
+        2C1 : FC 00              	ADI 0
+        2C3 : 3A CA              	BNZ PRINTINT64_DO_PRINT
+        2C5 : 88                 	GLO R8
+        2C6 : FB 12              	XRI 18
+        2C8 : 3A DC              	BNZ PRINTINT64_NO_PRINT
+        2CA :                    PRINTINT64_DO_PRINT:
+        2CA :                    	; set flag
+        2CA : F8 79              	LDI 'y'
+        2CC : AE                 	PLO R14
+        2CD :                    	; print '0' + R14.1
+        2CD : F8 F5              	LDI 0xF5
+        2CF : A9                 	PLO R9
+        2D0 : 9E                 	GHI R14
+        2D1 : FC 30              	ADI '0'
+        2D3 : 59                 	STR R9
+        2D4 :                    	; inline SPI wait bc R2 used to store data in this routine
+        2D4 : F8 F3              	LDI 0xF3
+        2D6 : A9                 	PLO R9
+        2D7 :                    PRINTINT64_SPI_WAIT_LOOP:
+        2D7 : 09                 	LDN R9
+        2D8 : FA 04              	ANI 4
+        2DA : 3A D7              	BNZ PRINTINT64_SPI_WAIT_LOOP
+        2DC :                    PRINTINT64_NO_PRINT:
+        2DC :                    	; }
+        2DC :                    	
+        2DC : 82                 	GLO R2
+        2DD : FC 08              	ADI 8
+        2DF : A2                 	PLO R2
+        2E0 : 92                 	GHI R2
+        2E1 : 7C 00              	ADCI 0
+        2E3 : B2                 	PHI R2
+        2E4 : 88                 	GLO R8
+        2E5 : FC 01              	ADI 1
+        2E7 : A8                 	PLO R8
+        2E8 : FF 13              	SMI 19
+        2EA : CA 02 70           	LBNZ PRINTINT64_LOOP
+        2ED :                    	
+        2ED : 60                 	IRX
+        2EE : F0                 	LDX
+        2EF : B5                 	PHI R5
+        2F0 : 60                 	IRX
+        2F1 : F0                 	LDX
+        2F2 : A5                 	PLO R5
+        2F3 : 60                 	IRX
+        2F4 : F0                 	LDX
+        2F5 : B4                 	PHI R4
+        2F6 : 60                 	IRX
+        2F7 : F0                 	LDX
+        2F8 : A4                 	PLO R4
+        2F9 : 60                 	IRX
+        2FA : F0                 	LDX
+        2FB : B3                 	PHI R3
+        2FC : 60                 	IRX
+        2FD : F0                 	LDX
+        2FE : A3                 	PLO R3
+        2FF : 60                 	IRX
+        300 : F0                 	LDX
+        301 : B2                 	PHI R2
+        302 : 60                 	IRX
+        303 : F0                 	LDX
+        304 : A2                 	PLO R2
+        305 : 60                 	IRX
+        306 : F0                 	LDX
+        307 : A9                 	PLO R9
+        308 : 60                 	IRX
+        309 : F0                 	LDX
+        30A : B8                 	PHI R8
+        30B : 60                 	IRX
+        30C : F0                 	LDX
+        30D : A8                 	PLO R8
+        30E : D0                 	SEP R0
+        30F : C0 02 40           	LBR PRINTINT64
+        312 :
+        312 :                    	; Pointer to LSB of fixed-point number in R3
+        312 :                    PRINT_FIXED:
+        312 : 89                 	GLO R9
+        313 : 73                 	STXD
+        314 : 83                 	GLO R3
+        315 : 73                 	STXD
+        316 : 93                 	GHI R3
+        317 : 73                 	STXD
+        318 :                    	
+        318 : 43                 	LDA R3
+        319 : AA                 	PLO R10
+        31A : 43                 	LDA R3
+        31B : BA                 	PHI R10
+        31C : 43                 	LDA R3
+        31D : AB                 	PLO R11
+        31E : 03                 	LDN R3
+        31F : BB                 	PHI R11
+        320 : FA 80              	ANI 128
+        322 : C2 03 4B           	LBZ PRINT_FIXED_NOT_NEG
+        325 :                    	; Print '-'
+        325 : F8 F5              	LDI 0xF5
+        327 : A9                 	PLO R9
+        328 : F8 2D              	LDI '-'
+        32A : 59                 	STR R9
+        32B : F8 F3              	LDI 0xF3
+        32D : A9                 	PLO R9
+        32E :                    PRINT_FIXED_SPI_WAIT_LOOP_1:
+        32E : 09                 	LDN R9
+        32F : FA 04              	ANI 4
+        331 : 3A 2E              	BNZ PRINT_FIXED_SPI_WAIT_LOOP_1
+        333 :                    	; Negate fixed-point number
+        333 : 8A                 	GLO R10
+        334 : FB FF              	XRI 0xFF
+        336 : FC 01              	ADI 1
+        338 : AA                 	PLO R10
+        339 : 9A                 	GHI R10
+        33A : FB FF              	XRI 0xFF
+        33C : 7C 00              	ADCI 0
+        33E : BA                 	PHI R10
+        33F : 8B                 	GLO R11
+        340 : FB FF              	XRI 0xFF
+        342 : 7C 00              	ADCI 0
+        344 : AB                 	PLO R11
+        345 : 9B                 	GHI R11
+        346 : FB FF              	XRI 0xFF
+        348 : 7C 00              	ADCI 0
+        34A : BB                 	PHI R11
+        34B :                    PRINT_FIXED_NOT_NEG:
+        34B :                    	; Print integer portion
+        34B : F8 80              	LDI TEMP0>>8
+        34D : B3                 	PHI R3
+        34E : F8 10              	LDI TEMP0&255
+        350 : A3                 	PLO R3
+        351 : 8B                 	GLO R11
+        352 : 53                 	STR R3
+        353 : 13                 	INC R3
+        354 : 9B                 	GHI R11
+        355 : 53                 	STR R3
+        356 : 13                 	INC R3
+        357 : F8 00              	LDI 0
+        359 : 53                 	STR R3
+        35A : 13                 	INC R3
+        35B : 53                 	STR R3
+        35C : 23                 	DEC R3
+        35D : 23                 	DEC R3
+        35E : 23                 	DEC R3
+        35F :                    	; The pain of doing nested subroutine calls on this arch
+        35F : 80                 	GLO R0
+        360 : 73                 	STXD
+        361 : 90                 	GHI R0
+        362 : 73                 	STXD
+        363 : F8 03              	LDI PRINT_FIXED_CONT_1>>8
+        365 : B0                 	PHI R0
+        366 : F8 6A              	LDI PRINT_FIXED_CONT_1&255
+        368 : A0                 	PLO R0
+        369 : D0                 	SEP R0
+        36A :                    PRINT_FIXED_CONT_1:
+        36A :                    	; Push R10, we won’t care about R11 anymore after this
+        36A : 8A                 	GLO R10
+        36B : 73                 	STXD
+        36C : 9A                 	GHI R10
+        36D : 73                 	STXD
+        36E : F8 01              	LDI PRINTINT32>>8
+        370 : B6                 	PHI R6
+        371 : F8 BF              	LDI PRINTINT32&255
+        373 : A6                 	PLO R6
+        374 : D6                 	SEP R6
+        375 :                    	; Print '.'
+        375 : F8 F5              	LDI 0xF5
+        377 : A9                 	PLO R9
+        378 : F8 2E              	LDI '.'
+        37A : 59                 	STR R9
+        37B : D2                 	SEP R2
+        37C : 60                 	IRX
+        37D : F0                 	LDX
+        37E : BA                 	PHI R10
+        37F : 60                 	IRX
+        380 : F0                 	LDX
+        381 : AA                 	PLO R10
+        382 :                    	; Print fraction portion
+        382 : F8 80              	LDI MIN00>>8
+        384 : B3                 	PHI R3
+        385 : F8 00              	LDI MIN00&255
+        387 : A3                 	PLO R3
+        388 : F8 00              	LDI 0
+        38A : 53                 	STR R3
+        38B : 13                 	INC R3
+        38C : 53                 	STR R3
+        38D : 13                 	INC R3
+        38E : F8 0A              	LDI 10
+        390 : 53                 	STR R3
+        391 : 13                 	INC R3
+        392 : FA 00              	ANI 0
+        394 : 53                 	STR R3
+        395 : F8 01              	LDI MUL_32x32_UNSIGNED>>8
+        397 : B6                 	PHI R6
+        398 : F8 60              	LDI MUL_32x32_UNSIGNED&255
+        39A : A6                 	PLO R6
+        39B : F8 06              	LDI 6
+        39D : AF                 	PLO R15
+        39E :                    PRINT_FIXED_LOOP:
+        39E : 2F                 	DEC R15
+        39F : 8F                 	GLO R15
+        3A0 : C2 03 CE           	LBZ PRINT_FIXED_LOOP_END
+        3A3 : 73                 	STXD
+        3A4 : F8 80              	LDI MIN10>>8
+        3A6 : B3                 	PHI R3
+        3A7 : F8 04              	LDI MIN10&255
+        3A9 : A3                 	PLO R3
+        3AA : 8A                 	GLO R10
+        3AB : 53                 	STR R3
+        3AC : 13                 	INC R3
+        3AD : 9A                 	GHI R10
+        3AE : 53                 	STR R3
+        3AF : 13                 	INC R3
+        3B0 : F8 00              	LDI 0
+        3B2 : 53                 	STR R3
+        3B3 : 13                 	INC R3
+        3B4 : 53                 	STR R3
+        3B5 : D6                 	SEP R6
+        3B6 : F8 80              	LDI MRES2>>8
+        3B8 : B3                 	PHI R3
+        3B9 : F8 0A              	LDI MRES2&255
+        3BB : A3                 	PLO R3
+        3BC : 43                 	LDA R3
+        3BD : AA                 	PLO R10
+        3BE : 43                 	LDA R3
+        3BF : BA                 	PHI R10
+        3C0 : 03                 	LDN R3
+        3C1 : FC 30              	ADI '0'
+        3C3 : 59                 	STR R9
+        3C4 : D2                 	SEP R2
+        3C5 :                    	
+        3C5 : 60                 	IRX
+        3C6 : F0                 	LDX
+        3C7 : AF                 	PLO R15
+        3C8 : 8A                 	GLO R10
+        3C9 : 3A 9E              	BNZ PRINT_FIXED_LOOP
+        3CB : 9A                 	GHI R10
+        3CC : 3A 9E              	BNZ PRINT_FIXED_LOOP
+        3CE :                    PRINT_FIXED_LOOP_END:
+        3CE :                    	; Return
+        3CE : F8 03              	LDI PRINT_FIXED_CONT_2>>8
+        3D0 : B6                 	PHI R6
+        3D1 : F8 D5              	LDI PRINT_FIXED_CONT_2&255
+        3D3 : A6                 	PLO R6
+        3D4 : D6                 	SEP R6
+        3D5 :                    PRINT_FIXED_CONT_2:
+        3D5 : 60                 	IRX
+        3D6 : F0                 	LDX
+        3D7 : B0                 	PHI R0
+        3D8 : 60                 	IRX
+        3D9 : F0                 	LDX
+        3DA : A0                 	PLO R0
+        3DB : 60                 	IRX
+        3DC : F0                 	LDX
+        3DD : B3                 	PHI R3
+        3DE : 60                 	IRX
+        3DF : F0                 	LDX
+        3E0 : A3                 	PLO R3
+        3E1 : 60                 	IRX
+        3E2 : F0                 	LDX
+        3E3 : A9                 	PLO R9
+        3E4 : D0                 	SEP R0
+        3E5 : C0 03 12           	LBR PRINT_FIXED
+        3E8 :
+        3E8 :                    DIV_48x32_SIGNED:
+        3E8 : F8 00              	LDI 0
+        3EA : BF                 	PHI R15
+        3EB : F8 80              	LDI DIN05>>8
+        3ED : BD                 	PHI R13
+        3EE : F8 15              	LDI DIN05&255
+        3F0 : AD                 	PLO R13
+        3F1 : 0D                 	LDN R13
+        3F2 : FA 80              	ANI 128
+        3F4 : C2 04 29           	LBZ DIV_48x32_NO_NEG_A
+        3F7 : F8 80              	LDI DIN00>>8
+        3F9 : BD                 	PHI R13
+        3FA : F8 10              	LDI DIN00&255
+        3FC : AD                 	PLO R13
+        3FD : 0D                 	LDN R13
+        3FE : FB FF              	XRI 0xFF
+        400 : FC 01              	ADI 1
+        402 : 5D                 	STR R13
+        403 : 1D                 	INC R13
+        404 : 0D                 	LDN R13
+        405 : FB FF              	XRI 0xFF
+        407 : 7C 00              	ADCI 0
+        409 : 5D                 	STR R13
+        40A : 1D                 	INC R13
+        40B : 0D                 	LDN R13
+        40C : FB FF              	XRI 0xFF
+        40E : 7C 00              	ADCI 0
+        410 : 5D                 	STR R13
+        411 : 1D                 	INC R13
+        412 : 0D                 	LDN R13
+        413 : FB FF              	XRI 0xFF
+        415 : 7C 00              	ADCI 0
+        417 : 5D                 	STR R13
+        418 : 1D                 	INC R13
+        419 : 0D                 	LDN R13
+        41A : FB FF              	XRI 0xFF
+        41C : 7C 00              	ADCI 0
+        41E : 5D                 	STR R13
+        41F : 1D                 	INC R13
+        420 : 0D                 	LDN R13
+        421 : FB FF              	XRI 0xFF
+        423 : 7C 00              	ADCI 0
+        425 : 5D                 	STR R13
+        426 : F8 01              	LDI 1
+        428 : BF                 	PHI R15
+        429 :                    DIV_48x32_NO_NEG_A:
+        429 : F8 80              	LDI MIN03>>8
+        42B : BD                 	PHI R13
+        42C : F8 03              	LDI MIN03&255
+        42E : AD                 	PLO R13
+        42F : 0D                 	LDN R13
+        430 : FA 80              	ANI 128
+        432 : C2 04 5A           	LBZ DIV_48x32_NO_NEG_B
+        435 : F8 80              	LDI MIN03>>8
+        437 : BD                 	PHI R13
+        438 : F8 03              	LDI MIN03&255
+        43A : AD                 	PLO R13
+        43B : 0D                 	LDN R13
+        43C : FB FF              	XRI 0xFF
+        43E : FC 01              	ADI 1
+        440 : 5D                 	STR R13
+        441 : 1D                 	INC R13
+        442 : 0D                 	LDN R13
+        443 : FB FF              	XRI 0xFF
+        445 : 7C 00              	ADCI 0
+        447 : 5D                 	STR R13
+        448 : 1D                 	INC R13
+        449 : 0D                 	LDN R13
+        44A : FB FF              	XRI 0xFF
+        44C : 7C 00              	ADCI 0
+        44E : 5D                 	STR R13
+        44F : 1D                 	INC R13
+        450 : 0D                 	LDN R13
+        451 : FB FF              	XRI 0xFF
+        453 : 7C 00              	ADCI 0
+        455 : 5D                 	STR R13
+        456 : 9F                 	GHI R15
+        457 : FB 01              	XRI 1
+        459 : BF                 	PHI R15
+        45A :                    DIV_48x32_NO_NEG_B:
+        45A : 9F                 	GHI R15
+        45B : C8                 	LSKP
+        45C :                    DIV_48x32_UNSIGNED:
+        45C : F8 00              	LDI 0
+        45E : BF                 	PHI R15
+        45F : F8 80              	LDI MRES5>>8
+        461 : BD                 	PHI R13
+        462 : F8 0D              	LDI MRES5&255
+        464 : AD                 	PLO R13
+        465 : ED                 	SEX R13
+        466 : F8 00              	LDI 0
+        468 : 73                 	STXD
+        469 : 73                 	STXD
+        46A : 73                 	STXD
+        46B : 73                 	STXD
+        46C : 73                 	STXD
+        46D : 73                 	STXD
+        46E : E1                 	SEX R1
+        46F : 82                 	GLO R2
+        470 : 73                 	STXD
+        471 : 92                 	GHI R2
+        472 : 73                 	STXD
+        473 : 83                 	GLO R3
+        474 : 73                 	STXD
+        475 : 93                 	GHI R3
+        476 : 73                 	STXD
+        477 : 88                 	GLO R8
+        478 : 73                 	STXD
+        479 : 98                 	GHI R8
+        47A : 73                 	STXD
+        47B : 84                 	GLO R4
+        47C : 73                 	STXD
+        47D : 94                 	GHI R4
+        47E : 73                 	STXD
+        47F : 87                 	GLO R7
+        480 : 73                 	STXD
+        481 : 97                 	GHI R7
+        482 : 73                 	STXD
+        483 :                    	
+        483 :                    	; Cache negative of second input
+        483 : F8 80              	LDI MIN00>>8
+        485 : BD                 	PHI R13
+        486 : F8 00              	LDI MIN00&255
+        488 : AD                 	PLO R13
+        489 : F8 80              	LDI MIN10>>8
+        48B : B7                 	PHI R7
+        48C : F8 04              	LDI MIN10&255
+        48E : A7                 	PLO R7
+        48F : 4D                 	LDA R13
+        490 : FB FF              	XRI 0xFF
+        492 : FC 01              	ADI 1
+        494 : 57                 	STR R7
+        495 : 17                 	INC R7
+        496 : 4D                 	LDA R13
+        497 : FB FF              	XRI 0xFF
+        499 : 7C 00              	ADCI 0
+        49B : 57                 	STR R7
+        49C : 17                 	INC R7
+        49D : 4D                 	LDA R13
+        49E : FB FF              	XRI 0xFF
+        4A0 : 7C 00              	ADCI 0
+        4A2 : 57                 	STR R7
+        4A3 : 17                 	INC R7
+        4A4 : 4D                 	LDA R13
+        4A5 : FB FF              	XRI 0xFF
+        4A7 : 7C 00              	ADCI 0
+        4A9 : 57                 	STR R7
+        4AA :                    	; LShift overflow
+        4AA : F8 00              	LDI 0
+        4AC : AD                 	PLO R13
+        4AD : BD                 	PHI R13
+        4AE : AE                 	PLO R14
+        4AF : BE                 	PHI R14
+        4B0 : AF                 	PLO R15
+        4B1 :                    	; To store result
+        4B1 : A8                 	PLO R8
+        4B2 : B8                 	PHI R8
+        4B3 : AA                 	PLO R10
+        4B4 : BA                 	PHI R10
+        4B5 : AB                 	PLO R11
+        4B6 : BB                 	PHI R11
+        4B7 :                    	; Loop counter
+        4B7 : F8 30              	LDI 48
+        4B9 : A4                 	PLO R4
+        4BA :                    DIV_48x32_LOOP:
+        4BA :                    	; {R11, R10, R8} <<= 1
+        4BA : 88                 	GLO R8
+        4BB : FE                 	SHL
+        4BC : A8                 	PLO R8
+        4BD : 98                 	GHI R8
+        4BE : 7E                 	SHLC
+        4BF : B8                 	PHI R8
+        4C0 : 8A                 	GLO R10
+        4C1 : 7E                 	SHLC
+        4C2 : AA                 	PLO R10
+        4C3 : 9A                 	GHI R10
+        4C4 : 7E                 	SHLC
+        4C5 : BA                 	PHI R10
+        4C6 : 8B                 	GLO R11
+        4C7 : 7E                 	SHLC
+        4C8 : AB                 	PLO R11
+        4C9 : 9B                 	GHI R11
+        4CA : 7E                 	SHLC
+        4CB : BB                 	PHI R11
+        4CC :                    	; {R15.0, R14, R13, DIN} <<= 1
+        4CC : F8 80              	LDI DIN00>>8
+        4CE : B2                 	PHI R2
+        4CF : F8 10              	LDI DIN00&255
+        4D1 : A2                 	PLO R2
+        4D2 : 02                 	LDN R2
+        4D3 : FE                 	SHL
+        4D4 : 52                 	STR R2
+        4D5 : 12                 	INC R2
+        4D6 : 02                 	LDN R2
+        4D7 : 7E                 	SHLC
+        4D8 : 52                 	STR R2
+        4D9 : 12                 	INC R2
+        4DA : 02                 	LDN R2
+        4DB : 7E                 	SHLC
+        4DC : 52                 	STR R2
+        4DD : 12                 	INC R2
+        4DE : 02                 	LDN R2
+        4DF : 7E                 	SHLC
+        4E0 : 52                 	STR R2
+        4E1 : 12                 	INC R2
+        4E2 : 02                 	LDN R2
+        4E3 : 7E                 	SHLC
+        4E4 : 52                 	STR R2
+        4E5 : 12                 	INC R2
+        4E6 : 02                 	LDN R2
+        4E7 : 7E                 	SHLC
+        4E8 : 52                 	STR R2
+        4E9 : 8D                 	GLO R13
+        4EA : 7E                 	SHLC
+        4EB : AD                 	PLO R13
+        4EC : 9D                 	GHI R13
+        4ED : 7E                 	SHLC
+        4EE : BD                 	PHI R13
+        4EF : 8E                 	GLO R14
+        4F0 : 7E                 	SHLC
+        4F1 : AE                 	PLO R14
+        4F2 : 9E                 	GHI R14
+        4F3 : 7E                 	SHLC
+        4F4 : BE                 	PHI R14
+        4F5 : 8F                 	GLO R15
+        4F6 : 7E                 	SHLC
+        4F7 : AF                 	PLO R15
+        4F8 :                    	; {R7, R3} = {R15.0, R14, R13} - MIN
+        4F8 : F8 80              	LDI MIN10>>8
+        4FA : B2                 	PHI R2
+        4FB : F8 04              	LDI MIN10&255
+        4FD : A2                 	PLO R2
+        4FE : E2                 	SEX R2
+        4FF : 8D                 	GLO R13
+        500 : F4                 	ADD
+        501 : 60                 	IRX
+        502 : A3                 	PLO R3
+        503 : 9D                 	GHI R13
+        504 : 74                 	ADC
+        505 : 60                 	IRX
+        506 : B3                 	PHI R3
+        507 : 8E                 	GLO R14
+        508 : 74                 	ADC
+        509 : 60                 	IRX
+        50A : A7                 	PLO R7
+        50B : 9E                 	GHI R14
+        50C : 74                 	ADC
+        50D : B7                 	PHI R7
+        50E : 8F                 	GLO R15
+        50F : 7C FF              	ADCI 0xFF
+        511 : E1                 	SEX R1
+        512 : 3B 23              	BNF DIV_48x32_LESS_THAN ; if carry set
+        514 :                    	; then
+        514 :                    	; R15.0 is only used to potentially overflow a single bit during unsigned divisions
+        514 :                    	; it will *always* be clear after the subtraction if the result is positive
+        514 :                    	; R15.0 = 0
+        514 :                    	; {R14, R13} = {R7, R3}
+        514 : F8 00              	LDI 0
+        516 : AF                 	PLO R15
+        517 : 83                 	GLO R3
+        518 : AD                 	PLO R13
+        519 : 93                 	GHI R3
+        51A : BD                 	PHI R13
+        51B : 87                 	GLO R7
+        51C : AE                 	PLO R14
+        51D : 97                 	GHI R7
+        51E : BE                 	PHI R14
+        51F :                    	; {R11, R10, R8} |= 1
+        51F : 88                 	GLO R8
+        520 : F9 01              	ORI 1
+        522 : A8                 	PLO R8
+        523 :                    DIV_48x32_LESS_THAN:
+        523 : 84                 	GLO R4
+        524 : FF 01              	SMI 1
+        526 : A4                 	PLO R4
+        527 : CA 04 BA           	LBNZ DIV_48x32_LOOP
+        52A : F8 80              	LDI MRES0>>8
+        52C : B2                 	PHI R2
+        52D : F8 08              	LDI MRES0&255
+        52F : A2                 	PLO R2
+        530 : 88                 	GLO R8
+        531 : 52                 	STR R2
+        532 : 12                 	INC R2
+        533 : 98                 	GHI R8
+        534 : 52                 	STR R2
+        535 : 12                 	INC R2
+        536 : 8A                 	GLO R10
+        537 : 52                 	STR R2
+        538 : 12                 	INC R2
+        539 : 9A                 	GHI R10
+        53A : 52                 	STR R2
+        53B : 12                 	INC R2
+        53C : 8B                 	GLO R11
+        53D : 52                 	STR R2
+        53E : 12                 	INC R2
+        53F : 9B                 	GHI R11
+        540 : 52                 	STR R2
+        541 :                    	; Technically, there is also a remainder in R14, R13, but I don’t need it right now
+        541 :
+        541 : 9F                 	GHI R15
+        542 : C2 05 74           	LBZ DIV_48x32_NO_NEG_RES
+        545 : F8 80              	LDI MRES0>>8
+        547 : B2                 	PHI R2
+        548 : F8 08              	LDI MRES0&255
+        54A : A2                 	PLO R2
+        54B : 02                 	LDN R2
+        54C : FB FF              	XRI 0xFF
+        54E : FC 01              	ADI 1
+        550 : 52                 	STR R2
+        551 : 12                 	INC R2
+        552 : 02                 	LDN R2
+        553 : FB FF              	XRI 0xFF
+        555 : 7C 00              	ADCI 0
+        557 : 52                 	STR R2
+        558 : 12                 	INC R2
+        559 : 02                 	LDN R2
+        55A : FB FF              	XRI 0xFF
+        55C : 7C 00              	ADCI 0
+        55E : 52                 	STR R2
+        55F : 12                 	INC R2
+        560 : 02                 	LDN R2
+        561 : FB FF              	XRI 0xFF
+        563 : 7C 00              	ADCI 0
+        565 : 52                 	STR R2
+        566 : 12                 	INC R2
+        567 : 02                 	LDN R2
+        568 : FB FF              	XRI 0xFF
+        56A : 7C 00              	ADCI 0
+        56C : 52                 	STR R2
+        56D : 12                 	INC R2
+        56E : 02                 	LDN R2
+        56F : FB FF              	XRI 0xFF
+        571 : 7C 00              	ADCI 0
+        573 : 52                 	STR R2
+        574 :                    DIV_48x32_NO_NEG_RES:
+        574 : 60                 	IRX
+        575 : F0                 	LDX
+        576 : B7                 	PHI R7
+        577 : 60                 	IRX
+        578 : F0                 	LDX
+        579 : A7                 	PLO R7
+        57A : 60                 	IRX
+        57B : F0                 	LDX
+        57C : B4                 	PHI R4
+        57D : 60                 	IRX
+        57E : F0                 	LDX
+        57F : A4                 	PLO R4
+        580 : 60                 	IRX
+        581 : F0                 	LDX
+        582 : B8                 	PHI R8
+        583 : 60                 	IRX
+        584 : F0                 	LDX
+        585 : A8                 	PLO R8
+        586 : 60                 	IRX
+        587 : F0                 	LDX
+        588 : B3                 	PHI R3
+        589 : 60                 	IRX
+        58A : F0                 	LDX
+        58B : A3                 	PLO R3
+        58C : 60                 	IRX
+        58D : F0                 	LDX
+        58E : B2                 	PHI R2
+        58F : 60                 	IRX
+        590 : F0                 	LDX
+        591 : A2                 	PLO R2
+        592 : D0                 	SEP R0
+        593 :
+        593 :                    	; Square-root of fixed-point number pointed to by R3 (LSB)
+        593 :                    SQRT:
+        593 : 83                 	GLO R3
+        594 : 73                 	STXD
+        595 : 93                 	GHI R3
+        596 : 73                 	STXD
+        597 : 89                 	GLO R9
+        598 : 73                 	STXD
+        599 : 99                 	GHI R9
+        59A : 73                 	STXD
+        59B :
+        59B : 13                 	INC R3
+        59C : 13                 	INC R3
+        59D : 13                 	INC R3
+        59E :                    	; Initial guess X / 2
+        59E : 03                 	LDN R3
+        59F : 23                 	DEC R3
+        5A0 : F6                 	SHR
+        5A1 : B4                 	PHI R4
+        5A2 : 03                 	LDN R3
+        5A3 : 23                 	DEC R3
+        5A4 : 76                 	SHRC
+        5A5 : A4                 	PLO R4
+        5A6 : 03                 	LDN R3
+        5A7 : 23                 	DEC R3
+        5A8 : 76                 	SHRC
+        5A9 : B9                 	PHI R9
+        5AA : 03                 	LDN R3
+        5AB : 76                 	SHRC
+        5AC : A9                 	PLO R9
+        5AD :
+        5AD : 80                 	GLO R0
+        5AE : 73                 	STXD
+        5AF : 90                 	GHI R0
+        5B0 : 73                 	STXD
+        5B1 : F8 B8              	LDI SQRT_CONT_1&255
+        5B3 : A0                 	PLO R0
+        5B4 : F8 05              	LDI SQRT_CONT_1>>8
+        5B6 : B0                 	PHI R0
+        5B7 : D0                 	SEP R0
+        5B8 :
+        5B8 :                    SQRT_CONT_1:
+        5B8 :                    	; 4 iterations
+        5B8 : F8 04              	LDI 4
+        5BA :                    SQRT_LOOP:
+        5BA : 73                 	STXD
+        5BB :                    	; x_n²
+        5BB : F8 80              	LDI MIN13>>8
+        5BD : BE                 	PHI R14
+        5BE : F8 07              	LDI MIN13&255
+        5C0 : AE                 	PLO R14
+        5C1 : EE                 	SEX R14
+        5C2 : 94                 	GHI R4
+        5C3 : 73                 	STXD
+        5C4 : 84                 	GLO R4
+        5C5 : 73                 	STXD
+        5C6 : 99                 	GHI R9
+        5C7 : 73                 	STXD
+        5C8 : 89                 	GLO R9
+        5C9 : 73                 	STXD
+        5CA : 94                 	GHI R4
+        5CB : 73                 	STXD
+        5CC : 84                 	GLO R4
+        5CD : 73                 	STXD
+        5CE : 99                 	GHI R9
+        5CF : 73                 	STXD
+        5D0 : 89                 	GLO R9
+        5D1 : 73                 	STXD
+        5D2 : E1                 	SEX R1
+        5D3 : F8 00              	LDI MUL_32x32_SIGNED>>8
+        5D5 : B6                 	PHI R6
+        5D6 : F8 FD              	LDI MUL_32x32_SIGNED&255
+        5D8 : A6                 	PLO R6
+        5D9 : D6                 	SEP R6
+        5DA :                    	; -x_n²
+        5DA : F8 80              	LDI MRES2>>8
+        5DC : BA                 	PHI R10
+        5DD : F8 0A              	LDI MRES2&255
+        5DF : AA                 	PLO R10
+        5E0 : 0A                 	LDN R10
+        5E1 : FB FF              	XRI 0xFF
+        5E3 : FC 01              	ADI 1
+        5E5 : AD                 	PLO R13
+        5E6 : 1A                 	INC R10
+        5E7 : 0A                 	LDN R10
+        5E8 : FB FF              	XRI 0xFF
+        5EA : 7C 00              	ADCI 0
+        5EC : BD                 	PHI R13
+        5ED : 1A                 	INC R10
+        5EE : 0A                 	LDN R10
+        5EF : FB FF              	XRI 0xFF
+        5F1 : 7C 00              	ADCI 0
+        5F3 : AE                 	PLO R14
+        5F4 : 1A                 	INC R10
+        5F5 : 0A                 	LDN R10
+        5F6 : FB FF              	XRI 0xFF
+        5F8 : 7C 00              	ADCI 0
+        5FA : BE                 	PHI R14
+        5FB :                    	; S + (-x_n²)
+        5FB : F8 80              	LDI DIN00>>8
+        5FD : BA                 	PHI R10
+        5FE : F8 10              	LDI DIN00&255
+        600 : AA                 	PLO R10
+        601 : F8 00              	LDI 0
+        603 : 5A                 	STR R10
+        604 : 1A                 	INC R10
+        605 : 5A                 	STR R10
+        606 : 1A                 	INC R10
+        607 : E3                 	SEX R3
+        608 : 8D                 	GLO R13
+        609 : F4                 	ADD
+        60A : 5A                 	STR R10
+        60B : 1A                 	INC R10
+        60C : 13                 	INC R3
+        60D : 9D                 	GHI R13
+        60E : 74                 	ADC
+        60F : 5A                 	STR R10
+        610 : 1A                 	INC R10
+        611 : 13                 	INC R3
+        612 : 8E                 	GLO R14
+        613 : 74                 	ADC
+        614 : 5A                 	STR R10
+        615 : 1A                 	INC R10
+        616 : 13                 	INC R3
+        617 : 9E                 	GHI R14
+        618 : 74                 	ADC
+        619 : 5A                 	STR R10
+        61A : 1A                 	INC R10
+        61B : 23                 	DEC R3
+        61C : 23                 	DEC R3
+        61D : 23                 	DEC R3
+        61E : E1                 	SEX R1
+        61F :                    	; 2x_n
+        61F : F8 80              	LDI MIN00>>8
+        621 : BA                 	PHI R10
+        622 : F8 00              	LDI MIN00&255
+        624 : AA                 	PLO R10
+        625 : 89                 	GLO R9
+        626 : FE                 	SHL
+        627 : 5A                 	STR R10
+        628 : 1A                 	INC R10
+        629 : 99                 	GHI R9
+        62A : 7E                 	SHLC
+        62B : 5A                 	STR R10
+        62C : 1A                 	INC R10
+        62D : 84                 	GLO R4
+        62E : 7E                 	SHLC
+        62F : 5A                 	STR R10
+        630 : 1A                 	INC R10
+        631 : 94                 	GHI R4
+        632 : 7E                 	SHLC
+        633 : 5A                 	STR R10
+        634 : 1A                 	INC R10
+        635 :                    	; a_n =  [S + (-x_n²)] / [2x_n]
+        635 : F8 03              	LDI DIV_48x32_SIGNED>>8
+        637 : B6                 	PHI R6
+        638 : F8 E8              	LDI DIV_48x32_SIGNED&255
+        63A : A6                 	PLO R6
+        63B : D6                 	SEP R6
+        63C :                    	; x_n + a_n
+        63C : F8 80              	LDI MRES0>>8
+        63E : BA                 	PHI R10
+        63F : F8 08              	LDI MRES0&255
+        641 : AA                 	PLO R10
+        642 : F8 80              	LDI SQRT_RESULT0>>8
+        644 : BB                 	PHI R11
+        645 : F8 16              	LDI SQRT_RESULT0&255
+        647 : AB                 	PLO R11
+        648 : EA                 	SEX R10
+        649 : 89                 	GLO R9
+        64A : F4                 	ADD
+        64B : 5B                 	STR R11
+        64C : F0                 	LDX
+        64D : A7                 	PLO R7
+        64E : 60                 	IRX
+        64F : 1B                 	INC R11
+        650 : 99                 	GHI R9
+        651 : 74                 	ADC
+        652 : 5B                 	STR R11
+        653 : F0                 	LDX
+        654 : B7                 	PHI R7
+        655 : 60                 	IRX
+        656 : 1B                 	INC R11
+        657 : 84                 	GLO R4
+        658 : 74                 	ADC
+        659 : 5B                 	STR R11
+        65A : F0                 	LDX
+        65B : AE                 	PLO R14
+        65C : 60                 	IRX
+        65D : 1B                 	INC R11
+        65E : 94                 	GHI R4
+        65F : 74                 	ADC
+        660 : 5B                 	STR R11
+        661 : F0                 	LDX
+        662 : BE                 	PHI R14
+        663 : E1                 	SEX R1
+        664 :                    	; a_n²
+        664 : F8 80              	LDI MIN13>>8
+        666 : BC                 	PHI R12
+        667 : F8 07              	LDI MIN13&255
+        669 : AC                 	PLO R12
+        66A : EC                 	SEX R12
+        66B : 9E                 	GHI R14
+        66C : 73                 	STXD
+        66D : 8E                 	GLO R14
+        66E : 73                 	STXD
+        66F : 97                 	GHI R7
+        670 : 73                 	STXD
+        671 : 87                 	GLO R7
+        672 : 73                 	STXD
+        673 : 9E                 	GHI R14
+        674 : 73                 	STXD
+        675 : 8E                 	GLO R14
+        676 : 73                 	STXD
+        677 : 97                 	GHI R7
+        678 : 73                 	STXD
+        679 : 87                 	GLO R7
+        67A : 73                 	STXD
+        67B : E1                 	SEX R1
+        67C : F8 00              	LDI MUL_32x32_SIGNED>>8
+        67E : B6                 	PHI R6
+        67F : F8 FD              	LDI MUL_32x32_SIGNED&255
+        681 : A6                 	PLO R6
+        682 : D6                 	SEP R6
+        683 : F8 80              	LDI MRES2>>8
+        685 : BA                 	PHI R10
+        686 : F8 0A              	LDI MRES2&255
+        688 : AA                 	PLO R10
+        689 : F8 80              	LDI DIN00>>8
+        68B : BB                 	PHI R11
+        68C : F8 10              	LDI DIN00&255
+        68E : AB                 	PLO R11
+        68F : F8 00              	LDI 0
+        691 : 5B                 	STR R11
+        692 : 1B                 	INC R11
+        693 : 5B                 	STR R11
+        694 : 1B                 	INC R11
+        695 : 4A                 	LDA R10
+        696 : 5B                 	STR R11
+        697 : 1B                 	INC R11
+        698 : 4A                 	LDA R10
+        699 : 5B                 	STR R11
+        69A : 1B                 	INC R11
+        69B : 4A                 	LDA R10
+        69C : 5B                 	STR R11
+        69D : 1B                 	INC R11
+        69E : 4A                 	LDA R10
+        69F : 5B                 	STR R11
+        6A0 : 1B                 	INC R11
+        6A1 :                    	; 2[x_n + a_n]
+        6A1 : F8 16              	LDI SQRT_RESULT0&255
+        6A3 : AA                 	PLO R10
+        6A4 : F8 80              	LDI SQRT_RESULT0>>8
+        6A6 : BA                 	PHI R10
+        6A7 : F8 00              	LDI MIN00&255
+        6A9 : AB                 	PLO R11
+        6AA : F8 80              	LDI MIN00>>8
+        6AC : BB                 	PHI R11
+        6AD : 4A                 	LDA R10
+        6AE : FE                 	SHL
+        6AF : 5B                 	STR R11
+        6B0 : 1B                 	INC R11
+        6B1 : 4A                 	LDA R10
+        6B2 : 7E                 	SHLC
+        6B3 : 5B                 	STR R11
+        6B4 : 1B                 	INC R11
+        6B5 : 4A                 	LDA R10
+        6B6 : 7E                 	SHLC
+        6B7 : 5B                 	STR R11
+        6B8 : 1B                 	INC R11
+        6B9 : 4A                 	LDA R10
+        6BA : 7E                 	SHLC
+        6BB : 5B                 	STR R11
+        6BC : 1B                 	INC R11
+        6BD :                    	; t_n = [a_n²]/[2(x_n + a_n)]
+        6BD : F8 03              	LDI DIV_48x32_SIGNED>>8
+        6BF : B6                 	PHI R6
+        6C0 : F8 E8              	LDI DIV_48x32_SIGNED&255
+        6C2 : A6                 	PLO R6
+        6C3 : D6                 	SEP R6
+        6C4 :                    	; -t_n
+        6C4 : F8 08              	LDI MRES0&255
+        6C6 : AA                 	PLO R10
+        6C7 : F8 80              	LDI MRES0>>8
+        6C9 : BA                 	PHI R10
+        6CA : 4A                 	LDA R10
+        6CB : FB FF              	XRI 0xFF
+        6CD : FC 01              	ADI 1
+        6CF : AB                 	PLO R11
+        6D0 : 4A                 	LDA R10
+        6D1 : FB FF              	XRI 0xFF
+        6D3 : 7C 00              	ADCI 0
+        6D5 : BB                 	PHI R11
+        6D6 : 4A                 	LDA R10
+        6D7 : FB FF              	XRI 0xFF
+        6D9 : 7C 00              	ADCI 0
+        6DB : AC                 	PLO R12
+        6DC : 0A                 	LDN R10
+        6DD : FB FF              	XRI 0xFF
+        6DF : 7C 00              	ADCI 0
+        6E1 : BC                 	PHI R12
+        6E2 :                    	; x_(n+1) = [x_n + a_n] + [-t_n]
+        6E2 : F8 80              	LDI SQRT_RESULT0>>8
+        6E4 : BA                 	PHI R10
+        6E5 : F8 16              	LDI SQRT_RESULT0&255
+        6E7 : AA                 	PLO R10
+        6E8 : EA                 	SEX R10
+        6E9 : 8B                 	GLO R11
+        6EA : F4                 	ADD
+        6EB : A9                 	PLO R9
+        6EC : 60                 	IRX
+        6ED : 9B                 	GHI R11
+        6EE : 74                 	ADC
+        6EF : B9                 	PHI R9
+        6F0 : 60                 	IRX
+        6F1 : 8C                 	GLO R12
+        6F2 : 74                 	ADC
+        6F3 : A4                 	PLO R4
+        6F4 : 60                 	IRX
+        6F5 : 9C                 	GHI R12
+        6F6 : 74                 	ADC
+        6F7 : B4                 	PHI R4
+        6F8 : E1                 	SEX R1
+        6F9 :
+        6F9 :                    	; Loop end
+        6F9 : 60                 	IRX
+        6FA : F0                 	LDX
+        6FB : FF 01              	SMI 1
+        6FD : CA 05 BA           	LBNZ SQRT_LOOP
+        700 :
+        700 :                    SQRT_LOOP_OVER:
+        700 : F8 80              	LDI SQRT_RESULT0>>8
+        702 : BA                 	PHI R10
+        703 : F8 16              	LDI SQRT_RESULT0&255
+        705 : AA                 	PLO R10
+        706 : 89                 	GLO R9
+        707 : 5A                 	STR R10
+        708 : 1A                 	INC R10
+        709 : 99                 	GHI R9
+        70A : 5A                 	STR R10
+        70B : 1A                 	INC R10
+        70C : 84                 	GLO R4
+        70D : 5A                 	STR R10
+        70E : 1A                 	INC R10
+        70F : 94                 	GHI R4
+        710 : 5A                 	STR R10
+        711 : 1A                 	INC R10
+        712 :
+        712 : F8 19              	LDI SQRT_CONT_2&255
+        714 : A6                 	PLO R6
+        715 : F8 07              	LDI SQRT_CONT_2>>8
+        717 : B6                 	PHI R6
+        718 : D6                 	SEP R6
+        719 :                    SQRT_CONT_2:
+        719 : 60                 	IRX
+        71A : F0                 	LDX
+        71B : B0                 	PHI R0
+        71C : 60                 	IRX
+        71D : F0                 	LDX
+        71E : A0                 	PLO R0
+        71F :                    	; Pop & Return
+        71F : 60                 	IRX
+        720 : F0                 	LDX
+        721 : B9                 	PHI R9
+        722 : 60                 	IRX
+        723 : F0                 	LDX
+        724 : A9                 	PLO R9
+        725 : 60                 	IRX
+        726 : F0                 	LDX
+        727 : B3                 	PHI R3
+        728 : 60                 	IRX
+        729 : F0                 	LDX
+        72A : A3                 	PLO R3
+        72B : D0                 	SEP R0
+        72C :
+        72C :                    TEST_MUL:
+        72C : F8 0D              	LDI 13
+        72E : 59                 	STR R9
+        72F : D2                 	SEP R2
+        730 : F8 0A              	LDI 10
+        732 : 59                 	STR R9
+        733 : D2                 	SEP R2
+        734 : F8 80              	LDI MIN13>>8
+        736 : B3                 	PHI R3
+        737 : F8 07              	LDI MIN13&255
+        739 : A3                 	PLO R3
+        73A : F8 01              	LDI 0x01
+        73C : 53                 	STR R3
+        73D : 23                 	DEC R3
+        73E : F8 2B              	LDI 0x2B
+        740 : 53                 	STR R3
+        741 : 23                 	DEC R3
+        742 : F8 D0              	LDI 0xD0
+        744 : 53                 	STR R3
+        745 : 23                 	DEC R3
+        746 : F8 08              	LDI 0x08
+        748 : 53                 	STR R3
+        749 : 23                 	DEC R3
+        74A : F8 00              	LDI 0x00
+        74C : 53                 	STR R3
+        74D : 23                 	DEC R3
+        74E : F8 3F              	LDI 0x3F
+        750 : 53                 	STR R3
+        751 : 23                 	DEC R3
+        752 : F8 12              	LDI 0x12
+        754 : 53                 	STR R3
+        755 : 23                 	DEC R3
+        756 : F8 AB              	LDI 0xAB
+        758 : 53                 	STR R3
+        759 :                    	
+        759 : F8 80              	LDI MIN10>>8
+        75B : B3                 	PHI R3
+        75C : F8 04              	LDI MIN10&255
+        75E : A3                 	PLO R3
+        75F : F8 01              	LDI PRINTINT32>>8
+        761 : B6                 	PHI R6
+        762 : F8 BF              	LDI PRINTINT32&255
+        764 : A6                 	PLO R6
+        765 : D6                 	SEP R6
+        766 : F8 F5              	LDI 0xF5
+        768 : A9                 	PLO R9
+        769 : F8 2A              	LDI '*'
+        76B : 59                 	STR R9
+        76C : D2                 	SEP R2
+        76D : F8 80              	LDI MIN00>>8
+        76F : B3                 	PHI R3
+        770 : F8 00              	LDI MIN00&255
+        772 : A3                 	PLO R3
+        773 : D6                 	SEP R6
+        774 : F8 F5              	LDI 0xF5
+        776 : A9                 	PLO R9
+        777 : F8 3D              	LDI '='
+        779 : 59                 	STR R9
+        77A : D2                 	SEP R2
+        77B :                    	
+        77B : F8 01              	LDI MUL_32x32_UNSIGNED>>8
+        77D : B6                 	PHI R6
+        77E : F8 60              	LDI MUL_32x32_UNSIGNED&255
+        780 : A6                 	PLO R6
+        781 : D6                 	SEP R6
+        782 :                    	
+        782 : F8 80              	LDI MRES0>>8
+        784 : B3                 	PHI R3
+        785 : F8 08              	LDI MRES0&255
+        787 : A3                 	PLO R3
+        788 : F8 08              	LDI 8
+        78A : A4                 	PLO R4
+        78B : F8 02              	LDI PRINTINT64>>8
+        78D : B6                 	PHI R6
+        78E : F8 40              	LDI PRINTINT64&255
+        790 : A6                 	PLO R6
+        791 : D6                 	SEP R6
+        792 : F8 F5              	LDI 0xF5
+        794 : A9                 	PLO R9
+        795 : F8 0D              	LDI 13
+        797 : 59                 	STR R9
+        798 : D2                 	SEP R2
+        799 : F8 0A              	LDI 10
+        79B : 59                 	STR R9
+        79C : D2                 	SEP R2
+        79D :                    	
+        79D : F8 00              	LDI 0
+        79F : A5                 	PLO R5
+        7A0 :                    FIXED_TEST_LOOP:
+        7A0 : F8 09              	LDI FIXED_TEST_NUMS&255
+        7A2 : 73                 	STXD
+        7A3 : 60                 	IRX
+        7A4 : 85                 	GLO R5
+        7A5 : F4                 	ADD
+        7A6 : A7                 	PLO R7
+        7A7 : F8 0B              	LDI FIXED_TEST_NUMS>>8
+        7A9 : 7C 00              	ADCI 0
+        7AB : B7                 	PHI R7
+        7AC :                    	
+        7AC : 97                 	GHI R7
+        7AD : B3                 	PHI R3
+        7AE : 87                 	GLO R7
+        7AF : A3                 	PLO R3
+        7B0 : F8 03              	LDI PRINT_FIXED>>8
+        7B2 : B6                 	PHI R6
+        7B3 : F8 12              	LDI PRINT_FIXED&255
+        7B5 : A6                 	PLO R6
+        7B6 : D6                 	SEP R6
+        7B7 : F8 2A              	LDI '*'
+        7B9 : 59                 	STR R9
+        7BA : D2                 	SEP R2
+        7BB : 87                 	GLO R7
+        7BC : FC 04              	ADI 4
+        7BE : A3                 	PLO R3
+        7BF : 97                 	GHI R7
+        7C0 : 7C 00              	ADCI 0
+        7C2 : B3                 	PHI R3
+        7C3 : D6                 	SEP R6
+        7C4 : F8 3D              	LDI '='
+        7C6 : 59                 	STR R9
+        7C7 : D2                 	SEP R2
+        7C8 :                    	
+        7C8 : F8 80              	LDI MIN00>>8
+        7CA : B3                 	PHI R3
+        7CB : F8 00              	LDI MIN00&255
+        7CD : A3                 	PLO R3
+        7CE : 47                 	LDA R7
+        7CF : 53                 	STR R3
+        7D0 : 13                 	INC R3
+        7D1 : 47                 	LDA R7
+        7D2 : 53                 	STR R3
+        7D3 : 13                 	INC R3
+        7D4 : 47                 	LDA R7
+        7D5 : 53                 	STR R3
+        7D6 : 13                 	INC R3
+        7D7 : 47                 	LDA R7
+        7D8 : 53                 	STR R3
+        7D9 : 13                 	INC R3
+        7DA : 47                 	LDA R7
+        7DB : 53                 	STR R3
+        7DC : 13                 	INC R3
+        7DD : 47                 	LDA R7
+        7DE : 53                 	STR R3
+        7DF : 13                 	INC R3
+        7E0 : 47                 	LDA R7
+        7E1 : 53                 	STR R3
+        7E2 : 13                 	INC R3
+        7E3 : 47                 	LDA R7
+        7E4 :                    	
+        7E4 : 53                 	STR R3
+        7E5 : F8 00              	LDI MUL_32x32_SIGNED>>8
+        7E7 : B6                 	PHI R6
+        7E8 : F8 FD              	LDI MUL_32x32_SIGNED&255
+        7EA : A6                 	PLO R6
+        7EB : D6                 	SEP R6
+        7EC :                    	
+        7EC : F8 0D              	LDI MRES5&255
+        7EE : A3                 	PLO R3
+        7EF : F8 80              	LDI MRES5>>8
+        7F1 : B3                 	PHI R3
+        7F2 : 03                 	LDN R3
+        7F3 : 23                 	DEC R3
+        7F4 : 73                 	STXD
+        7F5 : 03                 	LDN R3
+        7F6 : 23                 	DEC R3
+        7F7 : 73                 	STXD
+        7F8 : 03                 	LDN R3
+        7F9 : 23                 	DEC R3
+        7FA : 73                 	STXD
+        7FB : 03                 	LDN R3
+        7FC : 73                 	STXD
+        7FD : F8 03              	LDI PRINT_FIXED>>8
+        7FF : B6                 	PHI R6
+        800 : F8 12              	LDI PRINT_FIXED&255
+        802 : A6                 	PLO R6
+        803 : D6                 	SEP R6
+        804 : F8 20              	LDI ' '
+        806 : 59                 	STR R9
+        807 : D2                 	SEP R2
+        808 : F8 28              	LDI '('
+        80A : 59                 	STR R9
+        80B : D2                 	SEP R2
+        80C : F8 0A              	LDI MRES2&255
+        80E : A3                 	PLO R3
+        80F : F8 80              	LDI MRES2>>8
+        811 : B3                 	PHI R3
+        812 : 60                 	IRX
+        813 : F0                 	LDX
+        814 : 53                 	STR R3
+        815 : 13                 	INC R3
+        816 : 60                 	IRX
+        817 : F0                 	LDX
+        818 : 53                 	STR R3
+        819 : 13                 	INC R3
+        81A : 60                 	IRX
+        81B : F0                 	LDX
+        81C : 53                 	STR R3
+        81D : 13                 	INC R3
+        81E : 60                 	IRX
+        81F : F0                 	LDX
+        820 : 53                 	STR R3
+        821 : F8 04              	LDI 4
+        823 : A4                 	PLO R4
+        824 : F8 00              	LDI PRINT_HEX>>8
+        826 : B6                 	PHI R6
+        827 : F8 51              	LDI PRINT_HEX&255
+        829 : A6                 	PLO R6
+        82A : D6                 	SEP R6
+        82B : F8 F5              	LDI 0xF5
+        82D : A9                 	PLO R9
+        82E : F8 29              	LDI ')'
+        830 : 59                 	STR R9
+        831 : D2                 	SEP R2
+        832 : F8 0D              	LDI 13
+        834 : 59                 	STR R9
+        835 : D2                 	SEP R2
+        836 : F8 0A              	LDI 10
+        838 : 59                 	STR R9
+        839 : D2                 	SEP R2
+        83A :                    	
+        83A : 85                 	GLO R5
+        83B : FC 08              	ADI 8
+        83D : A5                 	PLO R5
+        83E : FF 20              	SMI 32
+        840 : CA 07 A0           	LBNZ FIXED_TEST_LOOP
+        843 :                    	
+        843 : F8 0D              	LDI 13
+        845 : 59                 	STR R9
+        846 : D2                 	SEP R2
+        847 : F8 0A              	LDI 10
+        849 : 59                 	STR R9
+        84A : D2                 	SEP R2
+        84B :                    DIVTEST:
+        84B : F8 80              	LDI DIN05>>8
+        84D : BF                 	PHI R15
+        84E : F8 15              	LDI DIN05&255
+        850 : AF                 	PLO R15
+        851 : EF                 	SEX R15
+        852 : F8 00              	LDI 0
+        854 : 73                 	STXD
+        855 : 73                 	STXD
+        856 : F8 01              	LDI 0x01
+        858 : 73                 	STXD
+        859 : F8 3A              	LDI 0x3A
+        85B : 73                 	STXD
+        85C : F8 2C              	LDI 0x2C
+        85E : 73                 	STXD
+        85F : F8 39              	LDI 0x39
+        861 : 73                 	STXD
+        862 : F8 80              	LDI MIN03>>8
+        864 : BF                 	PHI R15
+        865 : F8 03              	LDI MIN03&255
+        867 : AF                 	PLO R15
+        868 : F8 00              	LDI 0
+        86A : 73                 	STXD
+        86B : 73                 	STXD
+        86C : F8 01              	LDI 0x01
+        86E : 73                 	STXD
+        86F : F8 69              	LDI 0x69
+        871 : 73                 	STXD
+        872 : E1                 	SEX R1
+        873 : F8 01              	LDI PRINTINT32>>8
+        875 : B6                 	PHI R6
+        876 : F8 BF              	LDI PRINTINT32&255
+        878 : A6                 	PLO R6
+        879 : F8 80              	LDI DIN00>>8
+        87B : B3                 	PHI R3
+        87C : F8 10              	LDI DIN00&255
+        87E : A3                 	PLO R3
+        87F : D6                 	SEP R6
+        880 : F8 2F              	LDI '/'
+        882 : 59                 	STR R9
+        883 : D2                 	SEP R2
+        884 : F8 80              	LDI MIN00>>8
+        886 : B3                 	PHI R3
+        887 : F8 00              	LDI MIN00&255
+        889 : A3                 	PLO R3
+        88A : D6                 	SEP R6
+        88B : F8 3D              	LDI '='
+        88D : 59                 	STR R9
+        88E : D2                 	SEP R2
+        88F : F8 03              	LDI DIV_48x32_SIGNED>>8
+        891 : B6                 	PHI R6
+        892 : F8 E8              	LDI DIV_48x32_SIGNED&255
+        894 : A6                 	PLO R6
+        895 : D6                 	SEP R6
+        896 : F8 01              	LDI PRINTINT32>>8
+        898 : B6                 	PHI R6
+        899 : F8 BF              	LDI PRINTINT32&255
+        89B : A6                 	PLO R6
+        89C : F8 80              	LDI MRES0>>8
+        89E : B3                 	PHI R3
+        89F : F8 08              	LDI MRES0&255
+        8A1 : A3                 	PLO R3
+        8A2 : D6                 	SEP R6
+        8A3 : F8 0D              	LDI 13
+        8A5 : 59                 	STR R9
+        8A6 : D2                 	SEP R2
+        8A7 : F8 0A              	LDI 10
+        8A9 : 59                 	STR R9
+        8AA : D2                 	SEP R2
+        8AB :
+        8AB : F8 00              	LDI 0
+        8AD : A5                 	PLO R5
+        8AE :                    FIXED_TEST_LOOP2:
+        8AE : F8 09              	LDI FIXED_TEST_NUMS&255
+        8B0 : 73                 	STXD
+        8B1 : 60                 	IRX
+        8B2 : 85                 	GLO R5
+        8B3 : F4                 	ADD
+        8B4 : A7                 	PLO R7
+        8B5 : F8 0B              	LDI FIXED_TEST_NUMS>>8
+        8B7 : 7C 00              	ADCI 0
+        8B9 : B7                 	PHI R7
+        8BA :                    	
+        8BA : 97                 	GHI R7
+        8BB : B3                 	PHI R3
+        8BC : 87                 	GLO R7
+        8BD : A3                 	PLO R3
+        8BE : F8 03              	LDI PRINT_FIXED>>8
+        8C0 : B6                 	PHI R6
+        8C1 : F8 12              	LDI PRINT_FIXED&255
+        8C3 : A6                 	PLO R6
+        8C4 : D6                 	SEP R6
+        8C5 : F8 2F              	LDI '/'
+        8C7 : 59                 	STR R9
+        8C8 : D2                 	SEP R2
+        8C9 : 87                 	GLO R7
+        8CA : FC 04              	ADI 4
+        8CC : A3                 	PLO R3
+        8CD : 97                 	GHI R7
+        8CE : 7C 00              	ADCI 0
+        8D0 : B3                 	PHI R3
+        8D1 : D6                 	SEP R6
+        8D2 : F8 3D              	LDI '='
+        8D4 : 59                 	STR R9
+        8D5 : D2                 	SEP R2
+        8D6 :                    	
+        8D6 : F8 80              	LDI DIN00>>8
+        8D8 : B3                 	PHI R3
+        8D9 : F8 10              	LDI DIN00&255
+        8DB : A3                 	PLO R3
+        8DC : F8 00              	LDI 0
+        8DE : 53                 	STR R3
+        8DF : 13                 	INC R3
+        8E0 : 53                 	STR R3
+        8E1 : 13                 	INC R3
+        8E2 : 47                 	LDA R7
+        8E3 : 53                 	STR R3
+        8E4 : 13                 	INC R3
+        8E5 : 47                 	LDA R7
+        8E6 : 53                 	STR R3
+        8E7 : 13                 	INC R3
+        8E8 : 47                 	LDA R7
+        8E9 : 53                 	STR R3
+        8EA : 13                 	INC R3
+        8EB : 47                 	LDA R7
+        8EC : 53                 	STR R3
+        8ED : F8 80              	LDI MIN00>>8
+        8EF : B3                 	PHI R3
+        8F0 : F8 00              	LDI MIN00&255
+        8F2 : A3                 	PLO R3
+        8F3 : 47                 	LDA R7
+        8F4 : 53                 	STR R3
+        8F5 : 13                 	INC R3
+        8F6 : 47                 	LDA R7
+        8F7 : 53                 	STR R3
+        8F8 : 13                 	INC R3
+        8F9 : 47                 	LDA R7
+        8FA : 53                 	STR R3
+        8FB : 13                 	INC R3
+        8FC : 47                 	LDA R7
+        8FD : 53                 	STR R3
+        8FE :
+        8FE : F8 03              	LDI DIV_48x32_SIGNED>>8
+        900 : B6                 	PHI R6
+        901 : F8 E8              	LDI DIV_48x32_SIGNED&255
+        903 : A6                 	PLO R6
+        904 : D6                 	SEP R6
+        905 :                    	
+        905 : F8 0B              	LDI MRES3&255
+        907 : A3                 	PLO R3
+        908 : F8 80              	LDI MRES3>>8
+        90A : B3                 	PHI R3
+        90B : 03                 	LDN R3
+        90C : 23                 	DEC R3
+        90D : 73                 	STXD
+        90E : 03                 	LDN R3
+        90F : 23                 	DEC R3
+        910 : 73                 	STXD
+        911 : 03                 	LDN R3
+        912 : 23                 	DEC R3
+        913 : 73                 	STXD
+        914 : 03                 	LDN R3
+        915 : 73                 	STXD
+        916 : F8 03              	LDI PRINT_FIXED>>8
+        918 : B6                 	PHI R6
+        919 : F8 12              	LDI PRINT_FIXED&255
+        91B : A6                 	PLO R6
+        91C : D6                 	SEP R6
+        91D : F8 20              	LDI ' '
+        91F : 59                 	STR R9
+        920 : D2                 	SEP R2
+        921 : F8 28              	LDI '('
+        923 : 59                 	STR R9
+        924 : D2                 	SEP R2
+        925 : F8 0A              	LDI MRES2&255
+        927 : A3                 	PLO R3
+        928 : F8 80              	LDI MRES2>>8
+        92A : B3                 	PHI R3
+        92B : 60                 	IRX
+        92C : F0                 	LDX
+        92D : 53                 	STR R3
+        92E : 13                 	INC R3
+        92F : 60                 	IRX
+        930 : F0                 	LDX
+        931 : 53                 	STR R3
+        932 : 13                 	INC R3
+        933 : 60                 	IRX
+        934 : F0                 	LDX
+        935 : 53                 	STR R3
+        936 : 13                 	INC R3
+        937 : 60                 	IRX
+        938 : F0                 	LDX
+        939 : 53                 	STR R3
+        93A : F8 04              	LDI 4
+        93C : A4                 	PLO R4
+        93D : F8 00              	LDI PRINT_HEX>>8
+        93F : B6                 	PHI R6
+        940 : F8 51              	LDI PRINT_HEX&255
+        942 : A6                 	PLO R6
+        943 : D6                 	SEP R6
+        944 : F8 F5              	LDI 0xF5
+        946 : A9                 	PLO R9
+        947 : F8 29              	LDI ')'
+        949 : 59                 	STR R9
+        94A : D2                 	SEP R2
+        94B : F8 0D              	LDI 13
+        94D : 59                 	STR R9
+        94E : D2                 	SEP R2
+        94F : F8 0A              	LDI 10
+        951 : 59                 	STR R9
+        952 : D2                 	SEP R2
+        953 :                    	
+        953 : 85                 	GLO R5
+        954 : FC 08              	ADI 8
+        956 : A5                 	PLO R5
+        957 : FF 20              	SMI 32
+        959 : CA 08 AE           	LBNZ FIXED_TEST_LOOP2
+        95C :
+        95C : F8 0D              	LDI 13
+        95E : 59                 	STR R9
+        95F : D2                 	SEP R2
+        960 : F8 0A              	LDI 10
+        962 : 59                 	STR R9
+        963 : D2                 	SEP R2
+        964 :                    SQRT_TEST:
+        964 : F8 00              	LDI 0
+        966 : A5                 	PLO R5
+        967 :                    SQRT_TEST_LOOP:
+        967 : F8 09              	LDI FIXED_TEST_NUMS&255
+        969 : 73                 	STXD
+        96A : 60                 	IRX
+        96B : 85                 	GLO R5
+        96C : F4                 	ADD
+        96D : A3                 	PLO R3
+        96E : F8 0B              	LDI FIXED_TEST_NUMS>>8
+        970 : 7C 00              	ADCI 0
+        972 : B3                 	PHI R3
+        973 :
+        973 : 13                 	INC R3
+        974 : 13                 	INC R3
+        975 : 13                 	INC R3
+        976 : 03                 	LDN R3
+        977 : FA 80              	ANI 128
+        979 : CA 09 BE           	LBNZ SQRT_TEST_SKIP
+        97C : 23                 	DEC R3
+        97D : 23                 	DEC R3
+        97E : 23                 	DEC R3
+        97F :
+        97F : F8 73              	LDI 's'
+        981 : 59                 	STR R9
+        982 : D2                 	SEP R2
+        983 : F8 71              	LDI 'q'
+        985 : 59                 	STR R9
+        986 : D2                 	SEP R2
+        987 : F8 72              	LDI 'r'
+        989 : 59                 	STR R9
+        98A : D2                 	SEP R2
+        98B : F8 74              	LDI 't'
+        98D : 59                 	STR R9
+        98E : D2                 	SEP R2
+        98F : F8 28              	LDI '('
+        991 : 59                 	STR R9
+        992 : D2                 	SEP R2
+        993 : F8 03              	LDI PRINT_FIXED>>8
+        995 : B6                 	PHI R6
+        996 : F8 12              	LDI PRINT_FIXED&255
+        998 : A6                 	PLO R6
+        999 : D6                 	SEP R6
+        99A : F8 29              	LDI ')'
+        99C : 59                 	STR R9
+        99D : D2                 	SEP R2
+        99E : F8 3D              	LDI '='
+        9A0 : 59                 	STR R9
+        9A1 : D2                 	SEP R2
+        9A2 :
+        9A2 : F8 05              	LDI SQRT>>8
+        9A4 : B6                 	PHI R6
+        9A5 : F8 93              	LDI SQRT&255
+        9A7 : A6                 	PLO R6
+        9A8 : D6                 	SEP R6
+        9A9 : F8 80              	LDI SQRT_RESULT0>>8
+        9AB : B3                 	PHI R3
+        9AC : F8 16              	LDI SQRT_RESULT0&255
+        9AE : A3                 	PLO R3
+        9AF : F8 03              	LDI PRINT_FIXED>>8
+        9B1 : B6                 	PHI R6
+        9B2 : F8 12              	LDI PRINT_FIXED&255
+        9B4 : A6                 	PLO R6
+        9B5 : D6                 	SEP R6
+        9B6 : F8 0D              	LDI 13
+        9B8 : 59                 	STR R9
+        9B9 : D2                 	SEP R2
+        9BA : F8 0A              	LDI 10
+        9BC : 59                 	STR R9
+        9BD : D2                 	SEP R2
+        9BE :
+        9BE :                    SQRT_TEST_SKIP:
+        9BE : 85                 	GLO R5
+        9BF : FC 04              	ADI 4
+        9C1 : A5                 	PLO R5
+        9C2 : FF 1C              	SMI 28
+        9C4 : CA 09 67           	LBNZ SQRT_TEST_LOOP
+        9C7 :                    	
+        9C7 :                    FROM_RAM:
+        9C7 : F8 09              	LDI RAMCODE>>8
+        9C9 : B3                 	PHI R3
+        9CA : F8 EA              	LDI RAMCODE&255
+        9CC : A3                 	PLO R3
+        9CD : F8 80              	LDI 0x80
+        9CF : B4                 	PHI R4
+        9D0 : F8 00              	LDI 0x00
+        9D2 : A4                 	PLO R4
+        9D3 :                    FROM_RAM_SETUP_LOOP:
+        9D3 : 43                 	LDA R3
+        9D4 : 54                 	STR R4
+        9D5 : 14                 	INC R4
+        9D6 : 83                 	GLO R3
+        9D7 : FB 18              	XRI BEGIN_DATA&255
+        9D9 : 3A D3              	BNZ FROM_RAM_SETUP_LOOP
+        9DB : 93                 	GHI R3
+        9DC : FB 0A              	XRI BEGIN_DATA>>8
+        9DE : 3A D3              	BNZ FROM_RAM_SETUP_LOOP
+        9E0 :                    	
+        9E0 : F8 80              	LDI 0x80
+        9E2 : B4                 	PHI R4
+        9E3 : F8 00              	LDI 0x00
+        9E5 : A4                 	PLO R4
+        9E6 : D4                 	SEP R4
+        9E7 :                    	
+        9E7 : C0 00 30           	LBR END
+        9EA :
+        9EA :                    RAMCODE:
+        9EA : F8 80              	LDI 0x80
+        9EC : B3                 	PHI R3
+        9ED : F8 1B              	LDI 0x1B
+        9EF : A3                 	PLO R3
+        9F0 :                    	; +6h
+        9F0 : F8 F5              	LDI 0xF5
+        9F2 : A9                 	PLO R9
+        9F3 : 43                 	LDA R3
+        9F4 : C2 80 1A           	LBZ 0x801A
+        9F7 : 59                 	STR R9
+        9F8 : F8 F3              	LDI 0xF3
+        9FA : A9                 	PLO R9
+        9FB :                    	; +11h
+        9FB : 09                 	LDN R9
+        9FC : FA 04              	ANI 4
+        9FE : CA 80 11           	LBNZ 0x8011
+        A01 : C0 80 06           	LBR 0x8006
+        A04 :                    	; +1Ah
+        A04 : D0                 	SEP R0
+        A05 :                    	; +1Bh
+        A05 : 0A                 	db 10
+        A06 : 0D                 	db 13
+        A07 : 48 69 20 66 72 6F  	db 'Hi from RAM!'
+        A0D : 6D 20 52 41 4D 21
+        A13 : 0D                 	db 13
+        A14 : 0A                 	db 10
+        A15 : 0D                 	db 13
+        A16 : 0A                 	db 10
+        A17 : 00                 	db 0
+        A18 :                    BEGIN_DATA:
+        A18 : 00                 	db 0
+        A19 :                    	; End of code, begin data
+        A19 :                    HELLO_TEXT:
+        A19 : 0A                 	db 10
+        A1A : 0D                 	db 13
+        A1B : 48 65 6C 6C 6F 20  	db 'Hello from TinyTapeout 3.5!'
+        A21 : 66 72 6F 6D 20 54
+        A27 : 69 6E 79 54 61 70
+        A2D : 65 6F 75 74 20 33
+        A33 : 2E 35 21
+        A36 : 0D                 	db 13
+        A37 : 0A                 	db 10
+        A38 : 00                 	db 0
+        A39 :                    HEX_DIGITS:
+        A39 : 30 31 32 33 34 35  	db '0123456789ABCDEF'
+        A3F : 36 37 38 39 41 42
+        A45 : 43 44 45 46
+        A49 :                    PRINTINT32_DIVS:
+        A49 :                    	; -1000000000
+        A49 : 00 36 65 C4        	db 0x00, 0x36, 0x65, 0xC4
+        A4D :                    	; -100000000
+        A4D : 00 1F 0A FA        	db 0x00, 0x1F, 0x0A, 0xFA
+        A51 :                    	; -10000000
+        A51 : 80 69 67 FF        	db 0x80, 0x69, 0x67, 0xFF
+        A55 :                    	; -1000000
+        A55 : C0 BD F0 FF        	db 0xC0, 0xBD, 0xF0, 0xFF
+        A59 :                    	; -100000
+        A59 : 60 79 FE FF        	db 0x60, 0x79, 0xFE, 0xFF
+        A5D :                    	; -10000
+        A5D : F0 D8 FF FF        	db 0xF0, 0xD8, 0xFF, 0xFF
+        A61 :                    	; -1000
+        A61 : 18 FC FF FF        	db 0x18, 0xFC, 0xFF, 0xFF
+        A65 :                    	; -100
+        A65 : 9C FF FF FF        	db 0x9C, 0xFF, 0xFF, 0xFF
+        A69 :                    	; -10
+        A69 : F6 FF FF FF        	db 0xF6, 0xFF, 0xFF, 0xFF
+        A6D :                    	; -1
+        A6D : FF FF FF FF        	db 0xFF, 0xFF, 0xFF, 0xFF
+        A71 :                    PRINTINT64_DIVS:
+        A71 :                    	; -1000000000000000000
+        A71 : 00 00 9C 58 4C 49  	db 0x00, 0x00, 0x9C, 0x58, 0x4C, 0x49, 0x1F, 0xF2
+        A77 : 1F F2
+        A79 :                    	; -100000000000000000
+        A79 : 00 00 76 A2 87 BA  	db 0x00, 0x00, 0x76, 0xA2, 0x87, 0xBA, 0x9C, 0xFE
+        A7F : 9C FE
+        A81 :                    	; -10000000000000000
+        A81 : 00 00 3F 90 0D 79  	db 0x00, 0x00, 0x3F, 0x90, 0x0D, 0x79, 0xDC, 0xFF
+        A87 : DC FF
+        A89 :                    	; -1000000000000000
+        A89 : 00 80 39 5B 81 72  	db 0x00, 0x80, 0x39, 0x5B, 0x81, 0x72, 0xFC, 0xFF
+        A8F : FC FF
+        A91 :                    	; -100000000000000
+        A91 : 00 C0 85 EF 0C A5  	db 0x00, 0xC0, 0x85, 0xEF, 0x0C, 0xA5, 0xFF, 0xFF
+        A97 : FF FF
+        A99 :                    	; -10000000000000
+        A99 : 00 60 8D B1 E7 F6  	db 0x00, 0x60, 0x8D, 0xB1, 0xE7, 0xF6, 0xFF, 0xFF
+        A9F : FF FF
+        AA1 :                    	; -1000000000000
+        AA1 : 00 F0 5A 2B 17 FF  	db 0x00, 0xF0, 0x5A, 0x2B, 0x17, 0xFF, 0xFF, 0xFF
+        AA7 : FF FF
+        AA9 :                    	; -100000000000
+        AA9 : 00 18 89 B7 E8 FF  	db 0x00, 0x18, 0x89, 0xB7, 0xE8, 0xFF, 0xFF, 0xFF
+        AAF : FF FF
+        AB1 :                    	; -10000000000
+        AB1 : 00 1C F4 AB FD FF  	db 0x00, 0x1C, 0xF4, 0xAB, 0xFD, 0xFF, 0xFF, 0xFF
+        AB7 : FF FF
+        AB9 :                    	; -1000000000
+        AB9 : 00 36 65 C4 FF FF  	db 0x00, 0x36, 0x65, 0xC4, 0xFF, 0xFF, 0xFF, 0xFF
+        ABF : FF FF
+        AC1 :                    	; -100000000
+        AC1 : 00 1F 0A FA FF FF  	db 0x00, 0x1F, 0x0A, 0xFA, 0xFF, 0xFF, 0xFF, 0xFF
+        AC7 : FF FF
+        AC9 :                    	; -10000000
+        AC9 : 80 69 67 FF FF FF  	db 0x80, 0x69, 0x67, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        ACF : FF FF
+        AD1 :                    	; -1000000
+        AD1 : C0 BD F0 FF FF FF  	db 0xC0, 0xBD, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        AD7 : FF FF
+        AD9 :                    	; -100000
+        AD9 : 60 79 FE FF FF FF  	db 0x60, 0x79, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        ADF : FF FF
+        AE1 :                    	; -10000
+        AE1 : F0 D8 FF FF FF FF  	db 0xF0, 0xD8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        AE7 : FF FF
+        AE9 :                    	; -1000
+        AE9 : 18 FC FF FF FF FF  	db 0x18, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        AEF : FF FF
+        AF1 :                    	; -100
+        AF1 : 9C FF FF FF FF FF  	db 0x9C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        AF7 : FF FF
+        AF9 :                    	; -10
+        AF9 : F6 FF FF FF FF FF  	db 0xF6, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        AFF : FF FF
+        B01 :                    	; -1
+        B01 : FF FF FF FF FF FF  	db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+        B07 : FF FF
+        B09 :                    FIXED_TEST_NUMS:
+        B09 : 08 D0 2B 01 AD 39  	db 0x08, 0xD0, 0x2B, 0x01, 0xAD, 0x39, 0x00, 0x00
+        B0F : 00 00
+        B11 : 12 8D 95 FA FF 63  	db 0x12, 0x8D, 0x95, 0xFA, 0xFF, 0x63, 0x10, 0x00
+        B17 : 10 00
+        B19 : 3F 24 03 00 00 00  	db 0x3F, 0x24, 0x03, 0x00, 0x00, 0x00, 0x02, 0x00
+        B1F : 02 00
+        B21 : AD DF 02 00 AD DF  	db 0xAD, 0xDF, 0x02, 0x00, 0xAD, 0xDF, 0x02, 0x00
+        B27 : 02 00
