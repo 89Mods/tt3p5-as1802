@@ -1,0 +1,8 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1704384892" />
+    <testcase name="test_cpu" classname="test" file="/media/lucah/fbc90f8f-67e9-406d-9872-54f02ad6a2d8/tt3p5-as1802/src/run_pgm/test.py" lineno="5" time="5.937989711761475" sim_time_ns="234175000.0" ratio_time="39436747.345008984">
+      <failure message="Test failed with RANDOM_SEED=1704384892" />
+    </testcase>
+  </testsuite>
+</testsuites>

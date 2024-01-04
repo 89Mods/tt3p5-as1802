@@ -71,7 +71,7 @@ START:
 	SEX R9
 	
 	; SPI clock div
-	LDI 32
+	LDI 250
 	STXD
 	; Transmit 0 as sync char
 	LDI 0
