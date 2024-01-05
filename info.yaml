@@ -13,7 +13,7 @@ project:
   tiles: "8x2"
   
 # Keep a track of the submission yaml
-yaml_version: 3.5
+yaml_version: 6
 
 # As everyone will have access to all designs, try to make it easy for someone new to your design to know what
 # it does and how to operate it. This info will be automatically collected and used to make a datasheet for the chip.
@@ -66,7 +66,7 @@ documentation:
 # The following fields are optional
   tag:          "microprocessor, test"      # comma separated list of tags: test encryption, experiment, clock, animation, utility, industrial, pwm, fpga, alu, microprocessor, risc, riscv, sensor, signal generator, fft, filter, music, bcd, sound, serial, timer, random number generator, calculator, decoder, counter, puzzle, multiplier, game, oscillator,
   external_hw:  "W25Q-series ROM for program storage, LY68L6800 RAM for data memory."      # Describe any external hardware needed
-  discord:      "tholin#7559"      # Your discord handle, used for communication and automatically assigning tapeout role after a submission
+  discord:      "tholin"      # Your discord handle, used for communication and automatically assigning tapeout role after a submission
   doc_link:     ""      # URL to longer form documentation, eg the README.md in your repository
   clock_hz:     1000000       # Clock frequency in Hz (if required)
   picture:      ""      # relative path to a picture in your repository
